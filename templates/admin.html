@@ -3,164 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Panel — Alumni Tracker</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
-
-    .navbar {
-      background: #1a1a2e; padding: 0 32px; height: 60px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .navbar .brand { color: white; font-size: 18px; font-weight: 600; }
-    .navbar .nav-links { display: flex; gap: 20px; }
-    .navbar a { color: #aaa; text-decoration: none; font-size: 14px; }
-    .navbar a:hover { color: white; }
-    .navbar a.active { color: white; font-weight: 500; }
-
-    .container { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
-
-    .top-row {
-      display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 24px;
-    }
-    .top-row h2 { font-size: 22px; font-weight: 600; color: #1a1a2e; }
-
-    .btn {
-      padding: 10px 20px; border-radius: 8px; font-size: 14px;
-      font-weight: 500; cursor: pointer; text-decoration: none;
-      border: none; display: inline-block;
-    }
-    .btn-primary { background: #4f46e5; color: white; }
-    .btn-primary:hover { background: #4338ca; }
-    .btn-danger { background: #fef2f2; color: #dc2626; font-size: 12px; padding: 5px 12px; }
-    .btn-danger:hover { background: #fee2e2; }
-
-    .filters {
-      background: white; border-radius: 12px; padding: 16px 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px;
-      display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
-    }
-    .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
-    .filter-group label { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-    .filter-group input,
-    .filter-group select {
-      padding: 8px 12px; border: 1.5px solid #e0e0e0;
-      border-radius: 8px; font-size: 13px; outline: none; background: white;
-    }
-    .filter-group input:focus,
-    .filter-group select:focus { border-color: #4f46e5; }
-
-    .stats-row { display: flex; gap: 16px; margin-bottom: 20px; }
-    .mini-stat {
-      background: white; border-radius: 10px; padding: 16px 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05); flex: 1; text-align: center;
-    }
-    .mini-stat .val { font-size: 26px; font-weight: 600; color: #4f46e5; }
-    .mini-stat .lbl { font-size: 12px; color: #888; margin-top: 2px; }
-
-    .table-card {
-      background: white; border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;
-    }
-    table { width: 100%; border-collapse: collapse; }
-    thead { background: #f8f8fb; }
-    th {
-      padding: 12px 16px; text-align: left; font-size: 11px;
-      font-weight: 600; color: #888; text-transform: uppercase;
-      letter-spacing: 0.5px; border-bottom: 1px solid #f0f0f0;
-    }
-    td {
-      padding: 13px 16px; font-size: 13px; color: #333;
-      border-bottom: 1px solid #f8f8f8; vertical-align: middle;
-    }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #fafafa; }
-
-    .badge {
-      display: inline-block; padding: 3px 10px;
-      border-radius: 20px; font-size: 11px; font-weight: 500;
-    }
-    .badge-it       { background: #ede9fe; color: #6d28d9; }
-    .badge-bank     { background: #dbeafe; color: #1d4ed8; }
-    .badge-edu      { background: #dcfce7; color: #166534; }
-    .badge-gov      { background: #fef9c3; color: #854d0e; }
-    .badge-health   { background: #fce7f3; color: #9d174d; }
-    .badge-biz      { background: #ffedd5; color: #9a3412; }
-    .badge-study    { background: #f0fdf4; color: #166534; }
-    .badge-other    { background: #f1f5f9; color: #475569; }
-    .badge-none     { background: #f1f5f9; color: #aaa; }
-
-    .empty {
-      text-align: center; padding: 48px; color: #bbb; font-size: 14px;
-    }
-
-    .alert {
-      padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px;
-    }
-    .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
-    .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
-  </style>
+  <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
 <nav class="navbar">
-  <div class="brand">🎓 Alumni Tracker</div>
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
   <div class="nav-links">
     <a href="/dashboard">Dashboard</a>
-    <a href="/admin" class="active">Admin Panel</a>
-    <a href="/analytics">Analytics</a>
+    <a href="/admin" class="active">Admin</a>
     <a href="/admin/messages">Messages</a>
-    <a href="/logout" style="color:#ef4444;">Logout</a>
+    <a href="/analytics">Analytics</a>
+    <a href="/notices">Notices</a>
+    <a href="/logout" class="danger">Logout</a>
   </div>
 </nav>
 
 <div class="container">
-  <div class="top-row">
-    <h2>Alumni Management</h2>
-    <div style="display:flex; gap:10px;">
-        <a href="/admin/export" class="btn" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;">
-            ⬇ Export CSV
-        </a>
-        <a href="/admin/print-report" target="_blank" class="btn"
-            style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">
-            🖨 Print Report
-        </a>
-        <a href="/admin/add-student" class="btn btn-primary">+ Add Alumni</a>
-    
+  <div class="page-header-row">
+    <div class="page-header" style="margin-bottom:0;">
+      <h2>Alumni Management</h2>
+      <p>Manage all registered alumni records</p>
     </div>
-    
+    <div style="display:flex;gap:10px;">
+      <a href="/admin/export" class="btn btn-success btn-sm">⬇ Export CSV</a>
+      <a href="/admin/print-report" target="_blank" class="btn btn-info btn-sm">🖨 Print Report</a>
+      <a href="/admin/add-student" class="btn btn-primary btn-sm">+ Add Alumni</a>
     </div>
-  
+  </div>
 
   {% with messages = get_flashed_messages() %}
     {% if messages %}
       {% for message in messages %}
-        <div class="alert alert-success">✅ {{ message }}</div>
+        <div class="alert alert-success" style="margin-top:16px;">✅ {{ message }}</div>
       {% endfor %}
     {% endif %}
   {% endwith %}
 
-  <div class="stats-row">
-    <div class="mini-stat">
-      <div class="val">{{ students|length }}</div>
-      <div class="lbl">Total alumni shown</div>
+  <!-- Stats -->
+  <div class="stats-grid" style="margin-top:24px;">
+    <div class="stat-card purple">
+      <div class="stat-lbl">Total Alumni</div>
+      <div class="stat-val">{{ students|length }}</div>
     </div>
-    <div class="mini-stat">
-      <div class="val">{{ students|selectattr('job_sector')|list|length }}</div>
-      <div class="lbl">Employed</div>
+    <div class="stat-card green">
+      <div class="stat-lbl">Employed</div>
+      <div class="stat-val">{{ students|selectattr('job_sector')|list|length }}</div>
     </div>
-    <div class="mini-stat">
-      <div class="val">{{ students|selectattr('higher_edu')|list|length }}</div>
-      <div class="lbl">In higher education</div>
+    <div class="stat-card amber">
+      <div class="stat-lbl">Higher Education</div>
+      <div class="stat-val">{{ students|selectattr('higher_edu')|list|length }}</div>
     </div>
-    <div class="mini-stat">
-      <div class="val">{{ batches|length }}</div>
-      <div class="lbl">Batches registered</div>
+    <div class="stat-card blue">
+      <div class="stat-lbl">Batches</div>
+      <div class="stat-val">{{ batches|length }}</div>
     </div>
   </div>
 
+  <!-- Filters -->
   <form method="GET" action="/admin">
-    <div class="filters">
+    <div class="filters-bar">
       <div class="filter-group">
         <label>Search</label>
         <input type="text" name="search" placeholder="Name or Student ID" value="{{ search }}">
@@ -183,13 +85,14 @@
           {% endfor %}
         </select>
       </div>
-      <div>
-        <button type="submit" class="btn btn-primary" style="margin-top:18px;">Filter</button>
+      <div style="padding-top:18px;">
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
       </div>
     </div>
   </form>
 
-  <div class="table-card">
+  <!-- Table -->
+  <div class="table-wrap">
     {% if students %}
     <table>
       <thead>
@@ -197,15 +100,15 @@
           <th>Student ID</th>
           <th>Full Name</th>
           <th>Batch</th>
-          <th>Job / Sector</th>
+          <th>Sector</th>
           <th>Company</th>
           <th>Phone</th>
-          <th>Action</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for s in students %}
-        {% set sector_class = {
+        {% set badge = {
           'IT / Software': 'badge-it',
           'Banking / Finance': 'badge-bank',
           'Education / Teaching': 'badge-edu',
@@ -215,35 +118,45 @@
           'Higher Studies (Not working)': 'badge-study'
         }.get(s.job_sector, 'badge-other') %}
         <tr>
-          <td><strong>{{ s.student_id }}</strong></td>
-          <td>{{ s.full_name }}</td>
+          <td><strong style="color:#0f172a;">{{ s.student_id }}</strong></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar c{{ (loop.index % 5) + 1 }}"
+                   style="width:32px;height:32px;font-size:13px;border-radius:50%;">
+                {{ s.full_name[0].upper() }}
+              </div>
+              {{ s.full_name }}
+            </div>
+          </td>
           <td>{{ s.batch_year or '—' }}</td>
           <td>
             {% if s.job_sector %}
-              <span class="badge {{ sector_class }}">{{ s.job_sector }}</span>
+              <span class="badge {{ badge }}">{{ s.job_sector }}</span>
             {% else %}
               <span class="badge badge-none">Not updated</span>
             {% endif %}
           </td>
           <td>{{ s.company or '—' }}</td>
-          <td>{{ s.phone }}</td>
-        <td>
-            <div style="display:flex; gap:8px;">
-                <a href="/admin/view/{{ s.id }}" class="btn"
-                    style="background:#ede9fe; color:#6d28d9; font-size:12px; padding:5px 12px;">
-                    View
-                </a>
-                <form method="POST" action="/admin/delete/{{ s.id }}" onsubmit="return confirm('Delete {{ s.full_name }}?')">
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
+          <td style="font-family:monospace;font-size:13px;">{{ s.phone }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="/admin/view/{{ s.id }}" class="btn btn-sm"
+                 style="background:#ede9fe;color:#6d28d9;border:none;">View</a>
+              <form method="POST" action="/admin/delete/{{ s.id }}"
+                    onsubmit="return confirm('Delete {{ s.full_name }}?')" style="margin:0;">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
             </div>
-        </td>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
     {% else %}
-    <div class="empty">No alumni found. Try adjusting your filters or add new alumni.</div>
+    <div class="empty-state">
+      <div class="empty-icon">👤</div>
+      No alumni found. Try adjusting filters or add new alumni.
+    </div>
     {% endif %}
   </div>
 </div>
