@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Messages — Alumni Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+    .navbar {
+      background: #1a1a2e; padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .navbar .brand { color: white; font-size: 18px; font-weight: 600; }
+    .navbar .nav-links { display: flex; gap: 20px; }
+    .navbar a { color: #aaa; text-decoration: none; font-size: 14px; }
+    .navbar a:hover { color: white; }
+    .navbar a.active { color: white; font-weight: 500; }
+    .container { max-width: 860px; margin: 32px auto; padding: 0 24px; }
+    .top-row {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px;
+    }
+    .top-row h2 { font-size: 22px; font-weight: 600; color: #1a1a2e; }
+    .unread-badge {
+      background: #ef4444; color: white; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 20px; margin-left: 8px;
+    }
+    .alert-success {
+      background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a;
+      padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px;
+    }
+    .msg-card {
+      background: white; border-radius: 12px; padding: 20px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px;
+      border-left: 4px solid #e0e0e0; transition: transform 0.15s;
+    }
+    .msg-card.unread { border-left-color: #4f46e5; background: #fafafe; }
+    .msg-card:hover { transform: translateY(-1px); }
+    .msg-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 10px;
+    }
+    .msg-sender { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+    .msg-subject {
+      font-size: 13px; color: #4f46e5; font-weight: 500; margin-top: 2px;
+    }
+    .msg-date { font-size: 12px; color: #aaa; white-space: nowrap; }
+    .msg-content {
+      font-size: 14px; color: #444; line-height: 1.6;
+      margin-bottom: 14px; white-space: pre-line;
+    }
+    .msg-footer { display: flex; justify-content: space-between; align-items: center; }
+    .new-badge {
+      background: #ede9fe; color: #6d28d9; font-size: 11px;
+      font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    }
+    .read-badge {
+      background: #f0fdf4; color: #16a34a; font-size: 11px;
+      font-weight: 500; padding: 3px 10px; border-radius: 20px;
+    }
+    .btn-row { display: flex; gap: 8px; }
+    .btn-sm {
+      padding: 5px 14px; border-radius: 6px; font-size: 12px;
+      font-weight: 500; cursor: pointer; border: none;
+      text-decoration: none; display: inline-block;
+    }
+    .btn-read   { background: #ede9fe; color: #6d28d9; }
+    .btn-read:hover { background: #ddd6fe; }
+    .btn-delete { background: #fef2f2; color: #dc2626; }
+    .btn-delete:hover { background: #fee2e2; }
+    .empty {
+      text-align: center; padding: 60px; color: #bbb;
+      font-size: 15px; background: white; border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="brand">🎓 Alumni Tracker</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/admin">Admin Panel</a>
+    <a href="/admin/messages" class="active">Messages</a>
+    <a href="/analytics">Analytics</a>
+    <a href="/logout" style="color:#ef4444;">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="top-row">
+    <h2>
+      ✉️ Alumni Messages
+      {% set unread = messages | selectattr('is_read', 'equalto', false) | list | length %}
+      {% if unread > 0 %}
+        <span class="unread-badge">{{ unread }} new</span>
+      {% endif %}
+    </h2>
+  </div>
+
+  {% with msgs = get_flashed_messages() %}
+    {% if msgs %}
+      {% for m in msgs %}
+        <div class="alert-success">✅ {{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="msg-card {{ 'unread' if not msg.is_read }}">
+      <div class="msg-top">
+        <div>
+          <div class="msg-sender">{{ msg.sender_name }}</div>
+          <div class="msg-subject">Re: {{ msg.subject }}</div>
+        </div>
+        <div class="msg-date">{{ msg.created_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+      </div>
+      <div class="msg-content">{{ msg.content }}</div>
+      <div class="msg-footer">
+        {% if msg.is_read %}
+          <span class="read-badge">✓ Read</span>
+        {% else %}
+          <span class="new-badge">● New</span>
+        {% endif %}
+        <div class="btn-row">
+          {% if not msg.is_read %}
+            <form method="POST" action="/admin/messages/read/{{ msg.id }}" style="display:inline">
+              <button type="submit" class="btn-sm btn-read">✓ Mark as read</button>
+            </form>
+          {% endif %}
+          <form method="POST" action="/admin/messages/delete/{{ msg.id }}"
+                onsubmit="return confirm('Delete this message?')" style="display:inline">
+            <button type="submit" class="btn-sm btn-delete">🗑 Delete</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">No messages yet.</div>
+  {% endif %}
+</div>
+</body>
+</html>

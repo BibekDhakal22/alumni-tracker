@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Analytics — Alumni Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+    .navbar {
+      background: #1a1a2e; padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .navbar .brand { color: white; font-size: 18px; font-weight: 600; }
+    .navbar .nav-links { display: flex; gap: 20px; }
+    .navbar a { color: #aaa; text-decoration: none; font-size: 14px; }
+    .navbar a:hover { color: white; }
+    .navbar a.active { color: white; font-weight: 500; }
+
+    .container { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+
+    .page-title { font-size: 22px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+    .page-sub { font-size: 14px; color: #888; margin-bottom: 28px; }
+
+    .summary {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 28px;
+    }
+
+    .sum-card {
+      background: white; border-radius: 12px; padding: 22px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center;
+    }
+    .sum-card .val { font-size: 36px; font-weight: 700; }
+    .sum-card .lbl { font-size: 13px; color: #888; margin-top: 4px; }
+    .sum-card.purple .val { color: #4f46e5; }
+    .sum-card.green  .val { color: #16a34a; }
+    .sum-card.amber  .val { color: #d97706; }
+    .sum-card.gray   .val { color: #64748b; }
+
+    .charts {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 20px; margin-bottom: 28px;
+    }
+
+    .chart-card {
+      background: white; border-radius: 12px; padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .chart-card h3 {
+      font-size: 15px; font-weight: 600; color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+    .chart-card p {
+      font-size: 12px; color: #aaa; margin-bottom: 20px;
+    }
+    .chart-card.full { grid-column: span 2; }
+
+    .chart-wrap { position: relative; height: 280px; }
+    .chart-wrap-tall { position: relative; height: 320px; }
+
+    .table-card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;
+    }
+    .table-card h3 {
+      font-size: 15px; font-weight: 600; color: #1a1a2e;
+      padding: 20px 24px 16px; border-bottom: 1px solid #f0f0f0;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      padding: 10px 20px; text-align: left; font-size: 11px;
+      font-weight: 600; color: #888; text-transform: uppercase;
+      letter-spacing: 0.5px; background: #f8f8fb;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    td {
+      padding: 12px 20px; font-size: 13px; color: #333;
+      border-bottom: 1px solid #f8f8f8;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    .bar-fill {
+      height: 8px; border-radius: 4px; background: #4f46e5;
+      display: inline-block; min-width: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">🎓 Alumni Tracker</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/admin">Admin Panel</a>
+    <a href="/analytics" class="active">Analytics</a>
+    <a href="/logout" style="color:#ef4444;">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-title">Analytics Dashboard</div>
+  <div class="page-sub">Overview of alumni employment and education trends.</div>
+
+  <!-- Summary Cards -->
+  <div class="summary">
+    <div class="sum-card purple">
+      <div class="val">{{ total }}</div>
+      <div class="lbl">Total Alumni</div>
+    </div>
+    <div class="sum-card green">
+      <div class="val">{{ employed }}</div>
+      <div class="lbl">Employed</div>
+    </div>
+    <div class="sum-card amber">
+      <div class="val">{{ higher_edu }}</div>
+      <div class="lbl">Higher Education</div>
+    </div>
+    <div class="sum-card gray">
+      <div class="val">{{ not_updated }}</div>
+      <div class="lbl">Not Updated</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Employment by Sector</h3>
+      <p>Distribution of alumni across job sectors</p>
+      <div class="chart-wrap">
+        <canvas id="sectorChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Alumni by Batch Year</h3>
+      <p>Number of registered alumni per graduation year</p>
+      <div class="chart-wrap">
+        <canvas id="batchChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card full">
+      <h3>Employment Status Overview</h3>
+      <p>Employed vs higher education vs not updated</p>
+      <div class="chart-wrap">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sector breakdown table -->
+  <div class="table-card">
+    <h3>Sector Breakdown</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Sector</th>
+          <th>Count</th>
+          <th>Share</th>
+          <th style="width:200px">Distribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set total_sectors = sector_data | sum %}
+        {% for i in range(sector_labels | length) %}
+        <tr>
+          <td>{{ sector_labels[i] }}</td>
+          <td><strong>{{ sector_data[i] }}</strong></td>
+          <td>{{ ((sector_data[i] / total_sectors) * 100) | round(1) }}%</td>
+          <td>
+            <span class="bar-fill"
+              style="width: {{ ((sector_data[i] / total_sectors) * 180) | int }}px">
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const sectorLabels = {{ sector_labels | tojson }};
+  const sectorData   = {{ sector_data   | tojson }};
+  const batchLabels  = {{ batch_labels  | tojson }};
+  const batchData    = {{ batch_data    | tojson }};
+
+  const colors = [
+    '#4f46e5','#16a34a','#d97706','#dc2626',
+    '#0891b2','#7c3aed','#db2777','#65a30d'
+  ];
+
+  // Sector doughnut chart
+  new Chart(document.getElementById('sectorChart'), {
+    type: 'doughnut',
+    data: {
+      labels: sectorLabels,
+      datasets: [{ data: sectorData, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } }
+      }
+    }
+  });
+
+  // Batch bar chart
+  new Chart(document.getElementById('batchChart'), {
+    type: 'bar',
+    data: {
+      labels: batchLabels,
+      datasets: [{
+        label: 'Alumni count',
+        data: batchData,
+        backgroundColor: '#4f46e5',
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Status horizontal bar
+  new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Employed', 'Higher Education', 'Not Updated'],
+      datasets: [{
+        data: [{{ employed }}, {{ higher_edu }}, {{ not_updated }}],
+        backgroundColor: ['#16a34a', '#d97706', '#94a3b8'],
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

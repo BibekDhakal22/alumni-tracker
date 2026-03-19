@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Post Notice — Alumni Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+    .navbar {
+      background: #1a1a2e; padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .navbar .brand { color: white; font-size: 18px; font-weight: 600; }
+    .navbar a { color: #aaa; text-decoration: none; font-size: 14px; }
+    .navbar a:hover { color: white; }
+    .container { max-width: 640px; margin: 40px auto; padding: 0 24px; }
+    .page-title { font-size: 22px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+    .page-sub   { font-size: 14px; color: #888; margin-bottom: 24px; }
+    .card {
+      background: white; border-radius: 12px; padding: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .form-group { margin-bottom: 20px; }
+    label {
+      display: block; font-size: 12px; font-weight: 500; color: #666;
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    input[type="text"], textarea {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0;
+      border-radius: 8px; font-size: 14px; color: #1a1a2e; outline: none;
+      transition: border-color 0.2s; font-family: 'Segoe UI', sans-serif;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: #4f46e5; }
+    textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
+    .checkbox-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #fafafa; border: 1.5px solid #e0e0e0;
+      border-radius: 8px; padding: 12px 14px;
+    }
+    .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .checkbox-row span { font-size: 14px; color: #444; }
+    .checkbox-row small { font-size: 12px; color: #aaa; display: block; margin-top: 2px; }
+    .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+    .btn {
+      padding: 11px 24px; border-radius: 8px; font-size: 14px;
+      font-weight: 500; cursor: pointer; text-decoration: none; border: none;
+    }
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-secondary { background: #f0f0f0; color: #444; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="brand">🎓 Alumni Tracker</div>
+  <a href="/notices">← Back to Notice Board</a>
+</nav>
+
+<div class="container">
+  <div class="page-title">Post a Notice</div>
+  <div class="page-sub">This notice will be visible to all alumni.</div>
+
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Notice Title *</label>
+        <input type="text" name="title" placeholder="e.g. Alumni Meet 2025 — Save the Date" required>
+      </div>
+      <div class="form-group">
+        <label>Content *</label>
+        <textarea name="content" placeholder="Write the full notice content here..." required></textarea>
+      </div>
+      <div class="form-group">
+        <label>Options</label>
+        <div class="checkbox-row">
+          <input type="checkbox" name="is_pinned" id="pin">
+          <div>
+            <span>📌 Pin this notice to the top</span>
+            <small>Pinned notices always appear first</small>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">📋 Post Notice</button>
+        <a href="/notices" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

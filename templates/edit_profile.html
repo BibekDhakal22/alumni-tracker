@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Profile — Alumni Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+    }
+
+    .navbar {
+      background: #1a1a2e;
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .navbar .brand { color: white; font-size: 18px; font-weight: 600; }
+    .navbar a { color: #aaa; text-decoration: none; font-size: 14px; }
+    .navbar a:hover { color: white; }
+
+    .container {
+      max-width: 760px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+    }
+
+    .page-sub {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+
+    .card h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group { display: flex; flex-direction: column; }
+    .form-group.full { grid-column: span 2; }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select {
+      padding: 10px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1a1a2e;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+    }
+
+    input:focus, select:focus { border-color: #4f46e5; }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      padding: 11px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-secondary { background: #f0f0f0; color: #444; }
+    .btn-secondary:hover { background: #e0e0e0; }
+
+    .alert-success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="brand">🎓 Alumni Tracker</div>
+    <a href="/dashboard">← Back to Dashboard</a>
+  </nav>
+
+  <div class="container">
+    <div class="page-title">Edit Profile</div>
+    <div class="page-sub">Update your personal, employment and education information.</div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-success">✅ {{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+
+      <!-- Personal Info -->
+      <div class="card">
+        <h3>Personal Information</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="full_name" value="{{ user.full_name }}" required>
+          </div>
+          <div class="form-group">
+            <label>Student ID</label>
+            <input type="text" value="{{ user.student_id }}" disabled style="background:#f8f8f8; color:#aaa;">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" value="{{ user.email or '' }}" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" name="phone" value="{{ user.phone }}" required>
+          </div>
+          <div class="form-group">
+            <label>Batch Year</label>
+            <input type="text" name="batch_year" value="{{ user.batch_year or '' }}" placeholder="e.g. 2020">
+          </div>
+          <div class="form-group">
+            <label>Current Address</label>
+            <input type="text" name="address" value="{{ user.address or '' }}" placeholder="City, District">
+          </div>
+        </div>
+      </div>
+
+      <!-- Employment Info -->
+      <div class="card">
+        <h3>Employment Information</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Job Title</label>
+            <input type="text" name="job_title" value="{{ user.job_title or '' }}" placeholder="e.g. Software Developer">
+          </div>
+          <div class="form-group">
+            <label>Company / Organization</label>
+            <input type="text" name="company" value="{{ user.company or '' }}" placeholder="e.g. Leapfrog Technology">
+          </div>
+          <div class="form-group full">
+            <label>Job Sector</label>
+            <select name="job_sector">
+              <option value="">— Select sector —</option>
+              {% for sector in ['IT / Software', 'Banking / Finance', 'Education / Teaching',
+                                'Government / Civil Service', 'Healthcare', 'Business / Entrepreneurship',
+                                'Higher Studies (Not working)', 'Other'] %}
+                <option value="{{ sector }}" {{ 'selected' if user.job_sector == sector }}>{{ sector }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Higher Education -->
+      <div class="card">
+        <h3>Higher Education</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Degree / Program</label>
+            <input type="text" name="higher_edu" value="{{ user.higher_edu or '' }}" placeholder="e.g. MCA, MBA, MSc">
+          </div>
+          <div class="form-group">
+            <label>Institution</label>
+            <input type="text" name="institution" value="{{ user.institution or '' }}" placeholder="e.g. Tribhuvan University">
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+        <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+      </div>
+
+    </form>
+  </div>
+
+</body>
+</html>

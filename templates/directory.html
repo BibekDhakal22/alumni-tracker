@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Alumni Directory — Alumni Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+    .navbar {
+      background: #1a1a2e; padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .navbar .brand { color: white; font-size: 18px; font-weight: 600; }
+    .navbar .nav-links { display: flex; gap: 20px; }
+    .navbar a { color: #aaa; text-decoration: none; font-size: 14px; }
+    .navbar a:hover { color: white; }
+    .navbar a.active { color: white; font-weight: 500; }
+
+    .container { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .page-title { font-size: 22px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+    .page-sub { font-size: 14px; color: #888; margin-bottom: 24px; }
+
+    .filters {
+      background: white; border-radius: 12px; padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 24px;
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+    .filter-group label {
+      font-size: 11px; font-weight: 500; color: #888;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .filter-group input,
+    .filter-group select {
+      padding: 8px 12px; border: 1.5px solid #e0e0e0;
+      border-radius: 8px; font-size: 13px; outline: none; background: white;
+    }
+    .filter-group input:focus,
+    .filter-group select:focus { border-color: #4f46e5; }
+
+    .btn {
+      padding: 10px 20px; border-radius: 8px; font-size: 14px;
+      font-weight: 500; cursor: pointer; text-decoration: none; border: none;
+    }
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-primary:hover { background: #4338ca; }
+
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+
+    .alumni-card {
+      background: white; border-radius: 12px; padding: 22px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .alumni-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
+
+    .card-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .avatar {
+      width: 48px; height: 48px; border-radius: 50%; background: #4f46e5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: white; font-weight: 600; flex-shrink: 0;
+    }
+    .avatar.green  { background: #16a34a; }
+    .avatar.amber  { background: #d97706; }
+    .avatar.red    { background: #dc2626; }
+    .avatar.teal   { background: #0891b2; }
+
+    .card-name { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+    .card-id   { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    .card-divider { border: none; border-top: 1px solid #f0f0f0; margin-bottom: 12px; }
+
+    .card-info { display: flex; flex-direction: column; gap: 6px; }
+    .info-row { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+    .info-row .icon { width: 16px; text-align: center; font-size: 13px; }
+    .info-row span { color: #555; }
+    .info-row span.empty { color: #ccc; font-style: italic; }
+
+    .badge {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 20px; font-size: 11px; font-weight: 500; margin-top: 10px;
+    }
+    .badge-it     { background: #ede9fe; color: #6d28d9; }
+    .badge-bank   { background: #dbeafe; color: #1d4ed8; }
+    .badge-edu    { background: #dcfce7; color: #166534; }
+    .badge-gov    { background: #fef9c3; color: #854d0e; }
+    .badge-health { background: #fce7f3; color: #9d174d; }
+    .badge-biz    { background: #ffedd5; color: #9a3412; }
+    .badge-study  { background: #f0fdf4; color: #166534; }
+    .badge-other  { background: #f1f5f9; color: #475569; }
+    .badge-none   { background: #f1f5f9; color: #aaa; }
+
+    .empty-state {
+      text-align: center; padding: 60px; color: #bbb;
+      font-size: 15px; grid-column: span 3;
+    }
+    .result-count {
+      font-size: 13px; color: #888; margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">🎓 Alumni Tracker</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/directory" class="active">Directory</a>
+    {% if current_user.is_admin %}
+      <a href="/admin">Admin Panel</a>
+      <a href="/analytics">Analytics</a>
+    {% endif %}
+    <a href="/logout" style="color:#ef4444;">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-title">Alumni Directory</div>
+  <div class="page-sub">Browse and connect with fellow BCA alumni.</div>
+
+  <form method="GET" action="/directory">
+    <div class="filters">
+      <div class="filter-group">
+        <label>Search by name</label>
+        <input type="text" name="search" placeholder="e.g. Ram Thapa" value="{{ search }}">
+      </div>
+      <div class="filter-group">
+        <label>Batch Year</label>
+        <select name="batch">
+          <option value="">All batches</option>
+          {% for b in batches %}
+            <option value="{{ b }}" {{ 'selected' if batch == b }}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Job Sector</label>
+        <select name="sector">
+          <option value="">All sectors</option>
+          {% for s in sectors %}
+            <option value="{{ s }}" {{ 'selected' if sector == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary" style="margin-top:18px;">Search</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="result-count">Showing {{ students|length }} alumni</div>
+
+  {% set avatar_colors = ['', 'green', 'amber', 'red', 'teal'] %}
+  {% set badge_map = {
+    'IT / Software': 'badge-it',
+    'Banking / Finance': 'badge-bank',
+    'Education / Teaching': 'badge-edu',
+    'Government / Civil Service': 'badge-gov',
+    'Healthcare': 'badge-health',
+    'Business / Entrepreneurship': 'badge-biz',
+    'Higher Studies (Not working)': 'badge-study'
+  } %}
+
+  <div class="grid">
+    {% if students %}
+      {% for s in students %}
+      <div class="alumni-card">
+        <div class="card-top">
+          <div class="avatar {{ avatar_colors[loop.index % 5] }}">
+            {{ s.full_name[0].upper() }}
+          </div>
+          <div>
+            <div class="card-name">{{ s.full_name }}</div>
+            <div class="card-id">Batch {{ s.batch_year or 'N/A' }}</div>
+          </div>
+        </div>
+        <hr class="card-divider">
+        <div class="card-info">
+          <div class="info-row">
+            <span class="icon">💼</span>
+            <span class="{{ 'empty' if not s.job_title }}">
+              {{ s.job_title or 'Not updated' }}
+              {% if s.company %} at {{ s.company }}{% endif %}
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="icon">📍</span>
+            <span class="{{ 'empty' if not s.address }}">{{ s.address or 'Not updated' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="icon">🎓</span>
+            <span class="{{ 'empty' if not s.higher_edu }}">{{ s.higher_edu or 'Not updated' }}</span>
+          </div>
+        </div>
+        {% if s.job_sector %}
+          <span class="badge {{ badge_map.get(s.job_sector, 'badge-other') }}">{{ s.job_sector }}</span>
+        {% else %}
+          <span class="badge badge-none">No sector info</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">No alumni found matching your search.</div>
+    {% endif %}
+  </div>
+</div>
+
+</body>
+</html>

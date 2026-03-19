@@ -1,0 +1,7 @@
+venv/
+instance/
+static/uploads/
+__pycache__/
+*.pyc
+.env
+fix_db.py

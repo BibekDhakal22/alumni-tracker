@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Alumni Report — Print</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: white; color: #000; padding: 32px; }
+
+    .report-header { text-align: center; margin-bottom: 28px; border-bottom: 2px solid #1a1a2e; padding-bottom: 20px; }
+    .report-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+    .report-header h2 { font-size: 15px; font-weight: 400; color: #555; margin-bottom: 8px; }
+    .report-header p  { font-size: 12px; color: #888; }
+
+    .summary {
+      display: flex; gap: 16px; margin-bottom: 24px;
+    }
+    .sum-box {
+      flex: 1; border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 14px; text-align: center;
+    }
+    .sum-box .val { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+    .sum-box .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 24px; }
+    thead { background: #1a1a2e; color: white; }
+    th { padding: 10px 10px; text-align: left; font-weight: 600; font-size: 11px; }
+    td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    tr:nth-child(even) td { background: #f8f8fb; }
+    tr:last-child td { border-bottom: none; }
+
+    .empty-val { color: #bbb; font-style: italic; }
+
+    .report-footer {
+      text-align: center; font-size: 11px; color: #aaa;
+      border-top: 1px solid #e0e0e0; padding-top: 16px;
+    }
+
+    .print-btn {
+      position: fixed; top: 20px; right: 20px;
+      background: #4f46e5; color: white; border: none;
+      padding: 10px 22px; border-radius: 8px; font-size: 14px;
+      font-weight: 500; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .print-btn:hover { background: #4338ca; }
+
+    @media print {
+      .print-btn { display: none; }
+      body { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨 Print / Save PDF</button>
+
+<div class="report-header">
+  <h1>🎓 BCA Department — Alumni Report</h1>
+  <h2>TU Affiliated College</h2>
+  <p>Generated on {{ now.strftime('%B %d, %Y at %I:%M %p') }}</p>
+</div>
+
+<div class="summary">
+  <div class="sum-box">
+    <div class="val">{{ total }}</div>
+    <div class="lbl">Total Alumni</div>
+  </div>
+  <div class="sum-box">
+    <div class="val">{{ employed }}</div>
+    <div class="lbl">Employed</div>
+  </div>
+  <div class="sum-box">
+    <div class="val">{{ higher }}</div>
+    <div class="lbl">Higher Education</div>
+  </div>
+  <div class="sum-box">
+    <div class="val">{{ total - employed - higher }}</div>
+    <div class="lbl">Not Updated</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Student ID</th>
+      <th>Full Name</th>
+      <th>Batch</th>
+      <th>Phone</th>
+      <th>Job Title</th>
+      <th>Company</th>
+      <th>Sector</th>
+      <th>Higher Education</th>
+      <th>Address</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for s in students %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ s.student_id }}</td>
+    <td><strong>{{ s.full_name }}</strong></td>
+    <td>{{ s.batch_year or '—' }}</td>
+    <td>{{ s.phone }}</td>
+    <td>{% if s.job_title %}{{ s.job_title }}{% else %}<span class="empty-val">—</span>{% endif %}</td>
+    <td>{% if s.company %}{{ s.company }}{% else %}<span class="empty-val">—</span>{% endif %}</td>
+    <td>{% if s.job_sector %}{{ s.job_sector }}{% else %}<span class="empty-val">—</span>{% endif %}</td>
+    <td>{% if s.higher_edu %}{{ s.higher_edu }}{% else %}<span class="empty-val">—</span>{% endif %}</td>
+    <td>{% if s.address %}{{ s.address }}{% else %}<span class="empty-val">—</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</tbody>
+</table>
+
+<div class="report-footer">
+  Alumni Tracker System — BCA Final Year Project &nbsp;|&nbsp;
+  Total records: {{ total }} &nbsp;|&nbsp;
+  {{ now.strftime('%Y') }}
+</div>
+
+</body>
+</html>
