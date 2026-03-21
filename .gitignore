@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 .env
 fix_db.py
+.env

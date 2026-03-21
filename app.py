@@ -1,3 +1,12 @@
+import google.generativeai as genai
+from dotenv import load_dotenv
+import os
+
+
+
+load_dotenv()
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+model = genai.GenerativeModel('gemini-1.5-flash')
 import csv
 import io
 from flask import Response
@@ -385,6 +394,163 @@ def upload_photo():
     else:
         flash('Only PNG, JPG, GIF files allowed.')
     return redirect(url_for('dashboard'))
+
+# ───── AI ROUTES ─────
+
+@app.route('/ai/chat', methods=['GET', 'POST'])
+@login_required
+def ai_chat():
+    return render_template('ai_chat.html', user=current_user)
+
+@app.route('/ai/chat/message', methods=['POST'])
+@login_required
+def ai_chat_message():
+    from flask import jsonify
+    user_message = request.json.get('message', '')
+    if not user_message:
+        return jsonify({'error': 'No message'}), 400
+    try:
+        prompt = f"""You are a helpful assistant for an Alumni Tracker system of a BCA 
+        (Bachelor of Computer Applications) college affiliated with Tribhuvan University, Nepal.
+        You help alumni with questions about their career, higher education, college events, 
+        and general guidance. Be friendly, concise and helpful.
+        Keep responses under 150 words.
+        
+        Alumni name: {current_user.full_name}
+        Batch year: {current_user.batch_year or 'unknown'}
+        Current job: {current_user.job_title or 'not updated'}
+        
+        User question: {user_message}"""
+        response = model.generate_content(prompt)
+        return jsonify({'reply': response.text})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ai/career-advice')
+@login_required
+def ai_career_advice():
+    try:
+        prompt = f"""You are a career advisor for BCA graduates in Nepal.
+        Based on this alumni profile, give personalized career advice in a friendly tone.
+        
+        Name: {current_user.full_name}
+        Batch Year: {current_user.batch_year or 'unknown'}
+        Current Job Title: {current_user.job_title or 'not working'}
+        Company: {current_user.company or 'none'}
+        Job Sector: {current_user.job_sector or 'not specified'}
+        Higher Education: {current_user.higher_edu or 'none'}
+        Institution: {current_user.institution or 'none'}
+        Address: {current_user.address or 'Nepal'}
+        
+        Give advice in these 3 sections with emojis:
+        1. Current Status Assessment (2-3 sentences)
+        2. Career Growth Suggestions (3-4 bullet points)
+        3. Recommended Next Steps (2-3 actionable steps)
+        
+        Keep total response under 300 words. Be specific to Nepal's IT/tech job market."""
+        response = model.generate_content(prompt)
+        advice = response.text
+    except Exception as e:
+        advice = f"Sorry, could not generate advice at this time. Error: {str(e)}"
+    return render_template('ai_career.html', user=current_user, advice=advice)
+
+@app.route('/ai/analytics-summary')
+@login_required
+def ai_analytics_summary():
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+    try:
+        students = Student.query.filter_by(is_admin=False).all()
+        total    = len(students)
+        employed = sum(1 for s in students if s.job_sector and
+                       s.job_sector != 'Higher Studies (Not working)')
+        higher   = sum(1 for s in students if s.higher_edu)
+        sectors  = {}
+        for s in students:
+            sec = s.job_sector or 'Not updated'
+            sectors[sec] = sectors.get(sec, 0) + 1
+        batches = {}
+        for s in students:
+            b = s.batch_year or 'Unknown'
+            batches[b] = batches.get(b, 0) + 1
+
+        prompt = f"""You are an analytics expert analyzing alumni data for a BCA college in Nepal.
+        
+        Alumni Statistics:
+        - Total alumni registered: {total}
+        - Employed: {employed} ({round(employed/total*100) if total else 0}%)
+        - In higher education: {higher} ({round(higher/total*100) if total else 0}%)
+        - Not updated: {total - employed - higher}
+        - Sector breakdown: {sectors}
+        - Batch distribution: {batches}
+        
+        Write a professional analytics summary report with:
+        1. Overall Summary (2-3 sentences)
+        2. Key Insights (3-4 bullet points with specific numbers)
+        3. Trends Observed (2-3 points)
+        4. Recommendations for the college (2-3 actionable suggestions)
+        
+        Keep it under 350 words. Use emojis for section headers."""
+        response  = model.generate_content(prompt)
+        summary   = response.text
+    except Exception as e:
+        summary = f"Could not generate summary. Error: {str(e)}"
+    return render_template('ai_analytics.html', user=current_user, summary=summary)
+
+@app.route('/ai/profile-suggestions')
+@login_required
+def ai_profile_suggestions():
+    try:
+        prompt = f"""You are a professional profile advisor for BCA graduates in Nepal.
+        
+        Current profile:
+        - Name: {current_user.full_name}
+        - Batch: {current_user.batch_year or 'not set'}
+        - Job Title: {current_user.job_title or 'empty'}
+        - Company: {current_user.company or 'empty'}
+        - Sector: {current_user.job_sector or 'empty'}
+        - Higher Education: {current_user.higher_edu or 'empty'}
+        - Institution: {current_user.institution or 'empty'}
+        - Address: {current_user.address or 'empty'}
+        - Email: {'provided' if current_user.email else 'missing'}
+        
+        Analyze this profile and return a JSON object with exactly this structure:
+        {{
+          "score": <number 0-100>,
+          "missing_fields": ["list of empty important fields"],
+          "suggestions": ["list of 3-4 specific improvement suggestions"],
+          "strengths": ["list of 2-3 things already done well"],
+          "job_title_suggestion": "<suggested better job title if current is empty or generic>",
+          "sector_suggestion": "<suggested sector based on profile>"
+        }}
+        
+        Return ONLY the JSON, no other text."""
+        response = model.generate_content(prompt)
+        import json
+        raw = response.text.strip()
+        raw = raw.replace('```json', '').replace('```', '').strip()
+        suggestions = json.loads(raw)
+    except Exception as e:
+        suggestions = {
+            "score": 0,
+            "missing_fields": ["Could not analyze profile"],
+            "suggestions": [str(e)],
+            "strengths": [],
+            "job_title_suggestion": "",
+            "sector_suggestion": ""
+        }
+    return render_template('ai_profile.html', user=current_user, data=suggestions)
+
+@app.route('/ai/models')
+@login_required
+def list_models():
+    from flask import jsonify
+    try:
+        models = genai.list_models()
+        model_names = [m.name for m in models if 'generateContent' in m.supported_generation_methods]
+        return jsonify(model_names)
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 @app.route('/logout')
 @login_required

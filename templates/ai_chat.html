@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Assistant — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .chat-wrap {
+      display: flex; flex-direction: column;
+      height: calc(100vh - 140px); max-width: 760px;
+      margin: 24px auto; padding: 0 24px;
+    }
+    .chat-header { margin-bottom: 16px; }
+    .chat-box {
+      flex: 1; background: white; border-radius: 16px;
+      border: 1px solid #e2e8f0; padding: 20px;
+      overflow-y: auto; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .msg { display: flex; gap: 10px; margin-bottom: 16px; align-items: flex-start; }
+    .msg.user { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .msg.user .msg-avatar { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; }
+    .msg.ai   .msg-avatar { background: linear-gradient(135deg,#0ea5e9,#06b6d4); color: white; }
+    .msg-bubble {
+      max-width: 75%; padding: 12px 16px; border-radius: 12px;
+      font-size: 14px; line-height: 1.6;
+    }
+    .msg.user .msg-bubble {
+      background: linear-gradient(135deg,#6366f1,#4f46e5);
+      color: white; border-bottom-right-radius: 4px;
+    }
+    .msg.ai .msg-bubble {
+      background: #f8fafc; color: #1e293b;
+      border: 1px solid #e2e8f0; border-bottom-left-radius: 4px;
+    }
+    .msg.ai .msg-bubble.loading { color: #94a3b8; font-style: italic; }
+    .input-row {
+      display: flex; gap: 10px; align-items: center;
+    }
+    .input-row input {
+      flex: 1; padding: 13px 18px; border-radius: 12px;
+      border: 1.5px solid #e2e8f0; font-size: 14px;
+      outline: none; font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .input-row input:focus { border-color: #6366f1; }
+    .send-btn {
+      padding: 13px 22px; background: linear-gradient(135deg,#6366f1,#4f46e5);
+      color: white; border: none; border-radius: 12px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .send-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.4); }
+    .send-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .suggestions {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .suggestion-chip {
+      background: #ede9fe; color: #6d28d9; border: none;
+      padding: 6px 14px; border-radius: 20px; font-size: 12px;
+      font-weight: 500; cursor: pointer; transition: background 0.15s;
+    }
+    .suggestion-chip:hover { background: #ddd6fe; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/ai/career-advice">Career Advice</a>
+    <a href="/ai/profile-suggestions">Profile AI</a>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="chat-wrap">
+  <div class="chat-header">
+    <h2 style="font-size:22px;font-weight:700;color:#0f172a;">🤖 AI Assistant</h2>
+    <p style="color:#64748b;font-size:14px;">Ask anything about your career, higher education, or alumni network.</p>
+  </div>
+
+  <div class="suggestions">
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">What jobs are good for BCA graduates?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">How do I prepare for an IT interview?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">What is MCA and should I pursue it?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">Top IT companies in Nepal?</button>
+  </div>
+
+  <div class="chat-box" id="chatBox">
+    <div class="msg ai">
+      <div class="msg-avatar">AI</div>
+      <div class="msg-bubble">
+        👋 Hello <strong>{{ user.full_name }}</strong>! I'm your AI assistant.
+        I can help you with career advice, higher education guidance, and any questions
+        about the alumni network. What would you like to know?
+      </div>
+    </div>
+  </div>
+
+  <div class="input-row">
+    <input type="text" id="msgInput" placeholder="Ask me anything..."
+           onkeydown="if(event.key==='Enter') sendMessage()">
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send →</button>
+  </div>
+</div>
+
+<script>
+  function sendSuggestion(btn) {
+    document.getElementById('msgInput').value = btn.textContent;
+    sendMessage();
+  }
+
+  async function sendMessage() {
+    const input   = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const chatBox = document.getElementById('chatBox');
+    const message = input.value.trim();
+    if (!message) return;
+
+    input.value = '';
+    sendBtn.disabled = true;
+
+    chatBox.innerHTML += `
+      <div class="msg user">
+        <div class="msg-avatar">{{ user.full_name[0].upper() }}</div>
+        <div class="msg-bubble">${message}</div>
+      </div>`;
+
+    const loadingId = 'loading_' + Date.now();
+    chatBox.innerHTML += `
+      <div class="msg ai" id="${loadingId}">
+        <div class="msg-avatar">AI</div>
+        <div class="msg-bubble loading">Thinking...</div>
+      </div>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    try {
+      const res  = await fetch('/ai/chat/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+      const reply = data.reply || data.error || 'Sorry, something went wrong.';
+      document.getElementById(loadingId).outerHTML = `
+        <div class="msg ai">
+          <div class="msg-avatar">AI</div>
+          <div class="msg-bubble">${reply.replace(/\n/g, '<br>')}</div>
+        </div>`;
+    } catch (e) {
+      document.getElementById(loadingId).outerHTML = `
+        <div class="msg ai">
+          <div class="msg-avatar">AI</div>
+          <div class="msg-bubble">Sorry, could not connect to AI. Please try again.</div>
+        </div>`;
+    }
+
+    sendBtn.disabled = false;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+</script>
+</body>
+</html>
