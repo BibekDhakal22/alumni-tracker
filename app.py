@@ -1,13 +1,11 @@
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 import os
 
-
-
 load_dotenv()
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-model = genai.GenerativeModel('gemini-1.5-flash')
-import csv
+ai_client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+AI_MODEL  = 'gemini-2.0-flash-lite'
+
 import io
 from flask import Response
 import os
@@ -421,7 +419,9 @@ def ai_chat_message():
         Current job: {current_user.job_title or 'not updated'}
         
         User question: {user_message}"""
-        response = model.generate_content(prompt)
+        response = ai_client.models.generate_content(
+            model=AI_MODEL, contents=prompt
+        )
         return jsonify({'reply': response.text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -448,7 +448,9 @@ def ai_career_advice():
         3. Recommended Next Steps (2-3 actionable steps)
         
         Keep total response under 300 words. Be specific to Nepal's IT/tech job market."""
-        response = model.generate_content(prompt)
+        response = ai_client.models.generate_content(
+            model=AI_MODEL, contents=prompt
+        )
         advice = response.text
     except Exception as e:
         advice = f"Sorry, could not generate advice at this time. Error: {str(e)}"
@@ -491,8 +493,10 @@ def ai_analytics_summary():
         4. Recommendations for the college (2-3 actionable suggestions)
         
         Keep it under 350 words. Use emojis for section headers."""
-        response  = model.generate_content(prompt)
-        summary   = response.text
+        response = ai_client.models.generate_content(
+            model=AI_MODEL, contents=prompt
+        )
+        summary = response.text
     except Exception as e:
         summary = f"Could not generate summary. Error: {str(e)}"
     return render_template('ai_analytics.html', user=current_user, summary=summary)
@@ -525,7 +529,9 @@ def ai_profile_suggestions():
         }}
         
         Return ONLY the JSON, no other text."""
-        response = model.generate_content(prompt)
+        response = ai_client.models.generate_content(
+            model=AI_MODEL, contents=prompt
+        )
         import json
         raw = response.text.strip()
         raw = raw.replace('```json', '').replace('```', '').strip()
@@ -541,16 +547,6 @@ def ai_profile_suggestions():
         }
     return render_template('ai_profile.html', user=current_user, data=suggestions)
 
-@app.route('/ai/models')
-@login_required
-def list_models():
-    from flask import jsonify
-    try:
-        models = genai.list_models()
-        model_names = [m.name for m in models if 'generateContent' in m.supported_generation_methods]
-        return jsonify(model_names)
-    except Exception as e:
-        return jsonify({'error': str(e)})
 
 @app.route('/logout')
 @login_required
