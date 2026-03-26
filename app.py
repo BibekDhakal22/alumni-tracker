@@ -1,10 +1,10 @@
-from google import genai
+from groq import Groq
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
-ai_client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
-AI_MODEL  = 'gemini-2.0-flash-lite'
+ai_client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+AI_MODEL  = 'llama-3.3-70b-versatile'
 
 import io
 from flask import Response
@@ -395,7 +395,7 @@ def upload_photo():
 
 # ───── AI ROUTES ─────
 
-@app.route('/ai/chat', methods=['GET', 'POST'])
+@app.route('/ai/chat')
 @login_required
 def ai_chat():
     return render_template('ai_chat.html', user=current_user)
@@ -419,12 +419,15 @@ def ai_chat_message():
         Current job: {current_user.job_title or 'not updated'}
         
         User question: {user_message}"""
-        response = ai_client.models.generate_content(
-            model=AI_MODEL, contents=prompt
+        response = ai_client.chat.completions.create(
+            model=AI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300
         )
-        return jsonify({'reply': response.text})
+        return jsonify({'reply': response.choices[0].message.content})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/ai/career-advice')
 @login_required
@@ -448,10 +451,12 @@ def ai_career_advice():
         3. Recommended Next Steps (2-3 actionable steps)
         
         Keep total response under 300 words. Be specific to Nepal's IT/tech job market."""
-        response = ai_client.models.generate_content(
-            model=AI_MODEL, contents=prompt
+        response = ai_client.chat.completions.create(
+            model=AI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=600
         )
-        advice = response.text
+        advice = response.choices[0].message.content
     except Exception as e:
         advice = f"Sorry, could not generate advice at this time. Error: {str(e)}"
     return render_template('ai_career.html', user=current_user, advice=advice)
@@ -493,10 +498,12 @@ def ai_analytics_summary():
         4. Recommendations for the college (2-3 actionable suggestions)
         
         Keep it under 350 words. Use emojis for section headers."""
-        response = ai_client.models.generate_content(
-            model=AI_MODEL, contents=prompt
+        response = ai_client.chat.completions.create(
+            model=AI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=700
         )
-        summary = response.text
+        summary = response.choices[0].message.content
     except Exception as e:
         summary = f"Could not generate summary. Error: {str(e)}"
     return render_template('ai_analytics.html', user=current_user, summary=summary)
@@ -529,11 +536,13 @@ def ai_profile_suggestions():
         }}
         
         Return ONLY the JSON, no other text."""
-        response = ai_client.models.generate_content(
-            model=AI_MODEL, contents=prompt
+        response = ai_client.chat.completions.create(
+            model=AI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=500
         )
         import json
-        raw = response.text.strip()
+        raw = response.choices[0].message.content.strip()
         raw = raw.replace('```json', '').replace('```', '').strip()
         suggestions = json.loads(raw)
     except Exception as e:
