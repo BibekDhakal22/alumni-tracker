@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Event — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/events">← Back to Events</a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container-sm">
+  <div class="page-header">
+    <h2>🎉 Add New Event</h2>
+    <p>Schedule a new alumni event or reunion</p>
+  </div>
+
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Event Title *</label>
+        <input type="text" name="title" placeholder="e.g. BCA 2020 Batch Reunion" required>
+      </div>
+      <div class="form-group">
+        <label>Event Type</label>
+        <select name="event_type">
+          {% for t in ['Reunion', 'Seminar', 'Workshop', 'Social', 'General'] %}
+            <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Event Date *</label>
+        <input type="text" name="event_date" placeholder="e.g. March 15, 2025" required>
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" name="location" placeholder="e.g. Kathmandu, Hotel Himalaya">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" placeholder="Describe the event..."></textarea>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary">✅ Add Event</button>
+        <a href="/events" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

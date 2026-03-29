@@ -53,3 +53,14 @@ class Message(db.Model):
     content     = db.Column(db.Text, nullable=False)
     is_read     = db.Column(db.Boolean, default=False)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)    
+
+
+
+class Event(db.Model):
+    id          = db.Column(db.Integer, primary_key=True)
+    title       = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    event_date  = db.Column(db.String(50), nullable=False)
+    location    = db.Column(db.String(200))
+    event_type  = db.Column(db.String(50), default='General')
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)

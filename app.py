@@ -14,7 +14,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message
+from database import db, Student, Notice, Message, Event
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -399,34 +399,34 @@ def upload_photo():
 @login_required
 def ai_chat():
     return render_template('ai_chat.html', user=current_user)
-
 @app.route('/ai/chat/message', methods=['POST'])
 @login_required
 def ai_chat_message():
     from flask import jsonify
-    user_message = request.json.get('message', '')
+    data        = request.json
+    user_message = data.get('message', '')
+    history      = data.get('history', [])
     if not user_message:
         return jsonify({'error': 'No message'}), 400
     try:
-        prompt = f"""You are a helpful assistant for an Alumni Tracker system of a BCA 
-        (Bachelor of Computer Applications) college affiliated with Tribhuvan University, Nepal.
-        You help alumni with questions about their career, higher education, college events, 
-        and general guidance. Be friendly, concise and helpful.
-        Keep responses under 150 words.
-        
-        Alumni name: {current_user.full_name}
-        Batch year: {current_user.batch_year or 'unknown'}
-        Current job: {current_user.job_title or 'not updated'}
-        
-        User question: {user_message}"""
+        messages = []
+        for h in history:
+            if h.get('role') in ['user', 'assistant', 'system']:
+                messages.append({
+                    "role": h['role'],
+                    "content": h['content']
+                })
+        if not any(m['role'] == 'user' and m['content'] == user_message for m in messages):
+            messages.append({"role": "user", "content": user_message})
         response = ai_client.chat.completions.create(
             model=AI_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=300
+            messages=messages,
+            max_tokens=400
         )
         return jsonify({'reply': response.choices[0].message.content})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
 @app.route('/ai/career-advice')
@@ -556,6 +556,46 @@ def ai_profile_suggestions():
         }
     return render_template('ai_profile.html', user=current_user, data=suggestions)
 
+@app.route('/events')
+@login_required
+def events():
+    all_events = Event.query.order_by(Event.event_date.asc()).all()
+    return render_template('events.html', events=all_events)
+
+@app.route('/admin/events/add', methods=['GET', 'POST'])
+@login_required
+def add_event():
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        event = Event(
+            title       = request.form.get('title'),
+            description = request.form.get('description'),
+            event_date  = request.form.get('event_date'),
+            location    = request.form.get('location'),
+            event_type  = request.form.get('event_type')
+        )
+        db.session.add(event)
+        db.session.commit()
+        flash('Event added successfully!')
+        return redirect(url_for('events'))
+    return render_template('add_event.html')
+
+@app.route('/admin/events/delete/<int:event_id>', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+    event = Event.query.get_or_404(event_id)
+    db.session.delete(event)
+    db.session.commit()
+    flash('Event deleted.')
+    return redirect(url_for('events'))
+
+@app.route('/id-card')
+@login_required
+def id_card():
+    return render_template('id_card.html', user=current_user)
 
 @app.route('/logout')
 @login_required

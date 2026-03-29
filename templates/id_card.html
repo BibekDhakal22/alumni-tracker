@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Alumni ID Card — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .id-wrap {
+      max-width: 480px; margin: 40px auto; padding: 0 24px;
+    }
+
+    .id-card-preview {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #0f172a 100%);
+      border-radius: 20px; padding: 28px; color: white;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative; overflow: hidden; margin-bottom: 24px;
+    }
+
+    .id-card-preview::before {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(99,102,241,0.15);
+    }
+
+    .id-card-preview::after {
+      content: '';
+      position: absolute; bottom: -40px; left: -40px;
+      width: 150px; height: 150px; border-radius: 50%;
+      background: rgba(99,102,241,0.1);
+    }
+
+    .id-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 24px; padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .id-logo {
+      width: 44px; height: 44px; background: #6366f1;
+      border-radius: 12px; display: flex; align-items: center;
+      justify-content: center; font-size: 22px;
+    }
+
+    .id-college h3 { font-size: 14px; font-weight: 700; color: white; }
+    .id-college p  { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+    .id-body { display: flex; gap: 20px; align-items: flex-start; }
+
+    .id-photo {
+      width: 88px; height: 88px; border-radius: 14px; flex-shrink: 0;
+      border: 3px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; font-weight: 700; color: white;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      overflow: hidden;
+    }
+
+    .id-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .id-info { flex: 1; }
+    .id-name { font-size: 20px; font-weight: 700; color: white; margin-bottom: 4px; }
+    .id-role { font-size: 12px; color: #6366f1; font-weight: 600;
+               background: rgba(99,102,241,0.2); padding: 3px 10px;
+               border-radius: 20px; display: inline-block; margin-bottom: 14px; }
+
+    .id-fields { display: flex; flex-direction: column; gap: 8px; }
+    .id-field label {
+      font-size: 10px; color: #64748b; text-transform: uppercase;
+      letter-spacing: 0.8px; font-weight: 600; display: block; margin-bottom: 2px;
+    }
+    .id-field p { font-size: 13px; color: #e2e8f0; font-weight: 500; }
+
+    .id-footer {
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .id-barcode {
+      display: flex; gap: 2px; align-items: flex-end;
+    }
+
+    .id-barcode span {
+      display: inline-block; width: 3px; background: rgba(255,255,255,0.4);
+      border-radius: 1px;
+    }
+
+    .id-valid { font-size: 11px; color: #64748b; text-align: right; }
+    .id-valid strong { display: block; color: #22c55e; font-size: 12px; }
+
+    .id-number {
+      font-size: 11px; color: #475569; margin-top: 4px;
+      font-family: monospace; letter-spacing: 2px;
+    }
+
+    /* Action buttons */
+    .action-row { display: flex; gap: 12px; }
+
+    /* Print styles */
+    @media print {
+      nav, .action-row, .page-header { display: none !important; }
+      body { background: white !important; }
+      .id-wrap { margin: 0; padding: 0; max-width: 100%; }
+      .id-card-preview { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">← Dashboard</a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="id-wrap">
+  <div class="page-header">
+    <h2>🪪 Alumni ID Card</h2>
+    <p>Your official digital alumni identity card</p>
+  </div>
+
+  <!-- ID Card -->
+  <div class="id-card-preview" id="idCard">
+    <div class="id-header">
+      <div class="id-logo">🎓</div>
+      <div class="id-college">
+        <h3>BCA Department</h3>
+        <p>TU Affiliated College, Nepal</p>
+      </div>
+      <div style="margin-left:auto; font-size:10px; color:#475569;
+                  background:rgba(255,255,255,0.05); padding:4px 10px;
+                  border-radius:6px; border:1px solid rgba(255,255,255,0.1);">
+        ALUMNI
+      </div>
+    </div>
+
+    <div class="id-body">
+      <div class="id-photo">
+        {% if user.photo and user.photo != 'default.png' %}
+          <img src="/static/uploads/{{ user.photo }}" alt="Photo">
+        {% else %}
+          {{ user.full_name[0].upper() }}
+        {% endif %}
+      </div>
+      <div class="id-info">
+        <div class="id-name">{{ user.full_name }}</div>
+        <div class="id-role">BCA Graduate</div>
+        <div class="id-fields">
+          <div class="id-field">
+            <label>Student ID</label>
+            <p>{{ user.student_id }}</p>
+          </div>
+          <div class="id-field">
+            <label>Batch Year</label>
+            <p>{{ user.batch_year or 'N/A' }}</p>
+          </div>
+          <div class="id-field">
+            <label>Current Role</label>
+            <p>{{ user.job_title or 'Not specified' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="id-footer">
+      <div>
+        <div class="id-barcode">
+          {% for i in range(20) %}
+            <span style="height:{{ [8,14,10,16,8,12,18,8,14,10,16,8,12,14,10,8,16,12,8,14][i] }}px;"></span>
+          {% endfor %}
+        </div>
+        <div class="id-number">{{ user.student_id|upper }}-BCA-TU</div>
+      </div>
+      <div class="id-valid">
+        <span>Status</span>
+        <strong>✓ Verified Alumni</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row">
+    <button onclick="window.print()" class="btn btn-primary">🖨 Print ID Card</button>
+    <button onclick="downloadCard()" class="btn btn-ghost">⬇ Save as Image</button>
+    <a href="/edit-profile" class="btn btn-ghost">✏ Update Info</a>
+  </div>
+
+  <div style="margin-top:16px;" class="alert alert-info">
+    ℹ️ This is your official digital alumni ID card. You can print it or save it as an image.
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+async function downloadCard() {
+  const card = document.getElementById('idCard');
+  const canvas = await html2canvas(card, {
+    scale: 2, backgroundColor: null, useCORS: true
+  });
+  const link = document.createElement('a');
+  link.download = '{{ user.full_name }}_Alumni_ID.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+</script>
+</body>
+</html>

@@ -383,3 +383,69 @@ body {
 .flex   { display: flex; }
 .flex-center { display: flex; align-items: center; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
+
+/* ===== DARK MODE ===== */
+body.dark {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+body.dark .navbar { background: #020617; }
+
+body.dark .card,
+body.dark .table-wrap,
+body.dark .filters-bar,
+body.dark .alumni-card,
+body.dark .notice-card,
+body.dark .stat-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark .card-title { color: #e2e8f0; border-color: #334155; }
+body.dark .page-header h2 { color: #f1f5f9; }
+body.dark .page-header p  { color: #94a3b8; }
+
+body.dark .table-wrap thead { background: #0f172a; }
+body.dark .table-wrap th    { color: #64748b; }
+body.dark .table-wrap td    { color: #cbd5e1; border-color: #1e293b; }
+body.dark .table-wrap tr:hover td { background: #1e293b; }
+
+body.dark .form-group input,
+body.dark .form-group select,
+body.dark .form-group textarea,
+body.dark .filter-group input,
+body.dark .filter-group select {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+body.dark .btn-ghost {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+body.dark .profile-field p { color: #e2e8f0; }
+body.dark .profile-field label { color: #64748b; }
+
+body.dark .stat-card.purple,
+body.dark .stat-card.green,
+body.dark .stat-card.amber,
+body.dark .stat-card.slate,
+body.dark .stat-card.blue {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark .empty-state { color: #475569; }
+body.dark .text-muted   { color: #64748b; }
+
+/* Dark mode toggle button */
+.dark-toggle {
+  background: none; border: 1px solid #334155;
+  color: #94a3b8; padding: 5px 10px; border-radius: 8px;
+  cursor: pointer; font-size: 14px; transition: all 0.15s;
+}
+.dark-toggle:hover { background: #1e293b; color: #e2e8f0; }
