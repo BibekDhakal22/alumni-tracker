@@ -1,3 +1,43 @@
+# =============================================================================
+# APP.PY — Main Application File | Alumni Tracker System
+# BCA Final Year Project | TU Affiliated College, Nepal
+# =============================================================================
+#
+# PROJECT INFO:
+#   Name    : Alumni Tracker System
+#   Purpose : Track and manage BCA alumni information, employment and education
+#   Tech    : Python 3, Flask, SQLite, HTML/CSS/JS, Chart.js, Groq AI
+#   Author  : BCA Final Year Student, TU Affiliated College
+#
+# ROUTES SUMMARY:
+#   /login                  — Login page
+#   /dashboard              — Student dashboard
+#   /edit-profile           — Edit own profile
+#   /change-password        — Change password
+#   /upload-photo           — Upload profile photo
+#   /directory              — Browse all alumni
+#   /notices                — Notice board
+#   /contact                — Contact admin form
+#   /events                 — Alumni events
+#   /idcard                 — Digital alumni ID card
+#   /admin                  — Admin panel (admin only)
+#   /admin/add-student      — Add new alumni (admin only)
+#   /admin/delete/<id>      — Delete alumni (admin only)
+#   /admin/view/<id>        — View alumni profile (admin only)
+#   /admin/export           — Export CSV (admin only)
+#   /admin/print-report     — Print PDF report (admin only)
+#   /admin/messages         — View messages (admin only)
+#   /admin/notice/add       — Post notice (admin only)
+#   /analytics              — Analytics dashboard (admin only)
+#   /ai/chat                — AI chatbot
+#   /ai/career-advice       — AI career advice
+#   /ai/profile-suggestions — AI profile analysis
+#   /ai/analytics-summary   — AI analytics summary (admin only)
+#
+# =============================================================================
+
+
+
 from groq import Groq
 from dotenv import load_dotenv
 import os
@@ -14,7 +54,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event
+from database import db, Student, Notice, Message, Event, RSVP
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -560,7 +600,22 @@ def ai_profile_suggestions():
 @login_required
 def events():
     all_events = Event.query.order_by(Event.event_date.asc()).all()
-    return render_template('events.html', events=all_events)
+    # Get current user's RSVPs
+    user_rsvps = {r.event_id: r.status for r in
+                  RSVP.query.filter_by(student_id=current_user.id).all()}
+    # Get RSVP counts for each event
+    rsvp_counts = {}
+    for event in all_events:
+        rsvp_counts[event.id] = {
+            'going':     RSVP.query.filter_by(event_id=event.id, status='going').count(),
+            'maybe':     RSVP.query.filter_by(event_id=event.id, status='maybe').count(),
+            'not_going': RSVP.query.filter_by(event_id=event.id, status='not_going').count(),
+        }
+    return render_template('events.html',
+        events=all_events,
+        user_rsvps=user_rsvps,
+        rsvp_counts=rsvp_counts
+    )
 
 @app.route('/admin/events/add', methods=['GET', 'POST'])
 @login_required
@@ -596,6 +651,60 @@ def delete_event(event_id):
 @login_required
 def id_card():
     return render_template('id_card.html', user=current_user)
+
+
+@app.route('/events/rsvp/<int:event_id>', methods=['POST'])
+@login_required
+def rsvp_event(event_id):
+    status = request.form.get('status')
+    if status not in ['going', 'maybe', 'not_going']:
+        flash('Invalid RSVP status.')
+        return redirect(url_for('events'))
+
+    # Check if already RSVP'd
+    existing = RSVP.query.filter_by(
+        event_id=event_id,
+        student_id=current_user.id
+    ).first()
+
+    if existing:
+        # Update existing RSVP
+        existing.status = status
+        db.session.commit()
+        flash('Your RSVP has been updated!')
+    else:
+        # Create new RSVP
+        rsvp = RSVP(
+            event_id   = event_id,
+            student_id = current_user.id,
+            status     = status
+        )
+        db.session.add(rsvp)
+        db.session.commit()
+        flash('Your RSVP has been saved!')
+
+    return redirect(url_for('events'))
+
+@app.route('/admin/events/<int:event_id>/attendees')
+@login_required
+def event_attendees(event_id):
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+    event   = Event.query.get_or_404(event_id)
+    going   = RSVP.query.filter_by(event_id=event_id, status='going').all()
+    maybe   = RSVP.query.filter_by(event_id=event_id, status='maybe').all()
+    not_going = RSVP.query.filter_by(event_id=event_id, status='not_going').all()
+
+    # Get student details for each RSVP
+    def get_student(rsvp):
+        return Student.query.get(rsvp.student_id)
+
+    return render_template('event_attendees.html',
+        event=event,
+        going=[get_student(r) for r in going],
+        maybe=[get_student(r) for r in maybe],
+        not_going=[get_student(r) for r in not_going]
+    )
 
 @app.route('/logout')
 @login_required

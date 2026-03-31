@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Event Attendees — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/events">← Back to Events</a>
+    <a href="/admin">Admin</a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container-md">
+  <div class="page-header">
+    <h2>🎉 {{ event.title }}</h2>
+    <p>RSVP responses from alumni</p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+    <div class="stat-card green">
+      <div class="stat-lbl">Going</div>
+      <div class="stat-val">{{ going|length }}</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-lbl">Maybe</div>
+      <div class="stat-val">{{ maybe|length }}</div>
+    </div>
+    <div class="stat-card slate">
+      <div class="stat-lbl">Not Going</div>
+      <div class="stat-val">{{ not_going|length }}</div>
+    </div>
+  </div>
+
+  <!-- Going -->
+  {% if going %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">
+      ✅ Going ({{ going|length }})
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      {% for s in going %}
+      <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;
+                  border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;">
+        <div class="avatar c2" style="width:32px;height:32px;font-size:13px;">
+          {{ s.full_name[0].upper() }}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#0f172a;">{{ s.full_name }}</div>
+          <div style="font-size:11px;color:#94a3b8;">Batch {{ s.batch_year or 'N/A' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Maybe -->
+  {% if maybe %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">
+      🤔 Maybe ({{ maybe|length }})
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      {% for s in maybe %}
+      <div style="display:flex;align-items:center;gap:8px;background:#fefce8;
+                  border:1px solid #fef08a;border-radius:10px;padding:8px 14px;">
+        <div class="avatar c3" style="width:32px;height:32px;font-size:13px;">
+          {{ s.full_name[0].upper() }}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#0f172a;">{{ s.full_name }}</div>
+          <div style="font-size:11px;color:#94a3b8;">Batch {{ s.batch_year or 'N/A' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Not Going -->
+  {% if not_going %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">
+      ❌ Not Going ({{ not_going|length }})
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      {% for s in not_going %}
+      <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;
+                  border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;">
+        <div class="avatar c5" style="width:32px;height:32px;font-size:13px;">
+          {{ s.full_name[0].upper() }}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#0f172a;">{{ s.full_name }}</div>
+          <div style="font-size:11px;color:#94a3b8;">Batch {{ s.batch_year or 'N/A' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not going and not maybe and not not_going %}
+  <div class="empty-state card">
+    <div class="empty-icon">📭</div>
+    No RSVPs yet for this event.
+  </div>
+  {% endif %}
+
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

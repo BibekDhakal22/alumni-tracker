@@ -6,44 +6,61 @@
   <link rel="stylesheet" href="/static/css/style.css">
   <style>
     .events-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
     .event-card {
       background: white; border-radius: 14px; overflow: hidden;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
       transition: transform 0.15s, box-shadow 0.15s;
     }
     .event-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-    .event-banner {
-      height: 8px;
-    }
-    .event-banner.reunion   { background: linear-gradient(90deg,#6366f1,#8b5cf6); }
-    .event-banner.seminar   { background: linear-gradient(90deg,#0ea5e9,#06b6d4); }
-    .event-banner.workshop  { background: linear-gradient(90deg,#22c55e,#16a34a); }
-    .event-banner.social    { background: linear-gradient(90deg,#f59e0b,#d97706); }
-    .event-banner.general   { background: linear-gradient(90deg,#94a3b8,#64748b); }
+
+    .event-banner { height: 6px; }
+    .event-banner.reunion  { background: linear-gradient(90deg,#6366f1,#8b5cf6); }
+    .event-banner.seminar  { background: linear-gradient(90deg,#0ea5e9,#06b6d4); }
+    .event-banner.workshop { background: linear-gradient(90deg,#22c55e,#16a34a); }
+    .event-banner.social   { background: linear-gradient(90deg,#f59e0b,#d97706); }
+    .event-banner.general  { background: linear-gradient(90deg,#94a3b8,#64748b); }
+
     .event-body { padding: 18px; }
     .event-type {
       font-size: 11px; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.8px; margin-bottom: 8px;
     }
-    .event-type.reunion   { color: #6366f1; }
-    .event-type.seminar   { color: #0ea5e9; }
-    .event-type.workshop  { color: #22c55e; }
-    .event-type.social    { color: #f59e0b; }
-    .event-type.general   { color: #94a3b8; }
+    .event-type.reunion  { color: #6366f1; }
+    .event-type.seminar  { color: #0ea5e9; }
+    .event-type.workshop { color: #22c55e; }
+    .event-type.social   { color: #f59e0b; }
+    .event-type.general  { color: #94a3b8; }
+
     .event-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
     .event-desc  { font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 14px; }
-    .event-meta  { display: flex; flex-direction: column; gap: 5px; }
+    .event-meta  { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
     .event-meta-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; }
+
+    /* RSVP section */
+    .rsvp-section { border-top: 1px solid #f1f5f9; padding: 14px 18px; }
+    .rsvp-counts {
+      display: flex; gap: 12px; margin-bottom: 12px; font-size: 12px;
+    }
+    .rsvp-count { display: flex; align-items: center; gap: 4px; color: #64748b; }
+    .rsvp-buttons { display: flex; gap: 6px; }
+    .rsvp-btn {
+      flex: 1; padding: 7px 4px; border-radius: 8px; font-size: 12px;
+      font-weight: 600; cursor: pointer; border: 1.5px solid transparent;
+      transition: all 0.15s; text-align: center;
+    }
+    .rsvp-btn.going     { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+    .rsvp-btn.maybe     { background: #fefce8; color: #854d0e; border-color: #fef08a; }
+    .rsvp-btn.not_going { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+    .rsvp-btn.going.active     { background: #16a34a; color: white; border-color: #16a34a; }
+    .rsvp-btn.maybe.active     { background: #d97706; color: white; border-color: #d97706; }
+    .rsvp-btn.not_going.active { background: #dc2626; color: white; border-color: #dc2626; }
+    .rsvp-btn:hover { transform: translateY(-1px); }
+
     .event-footer {
-      padding: 12px 18px; border-top: 1px solid #f1f5f9;
+      padding: 10px 18px; border-top: 1px solid #f1f5f9;
       display: flex; justify-content: space-between; align-items: center;
     }
-    .days-badge {
-      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
-    }
-    .days-badge.upcoming { background: #dcfce7; color: #16a34a; }
-    .days-badge.soon     { background: #fef9c3; color: #854d0e; }
-    .days-badge.past     { background: #f1f5f9; color: #94a3b8; }
   </style>
 </head>
 <body>
@@ -55,9 +72,7 @@
     <a href="/events" class="active">Events</a>
     <a href="/notices">Notices</a>
     <a href="/directory">Directory</a>
-    {% if current_user.is_admin %}
-      <a href="/admin">Admin</a>
-    {% endif %}
+    {% if current_user.is_admin %}<a href="/admin">Admin</a>{% endif %}
     <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
     <a href="/logout" class="danger">Logout</a>
   </div>
@@ -67,7 +82,7 @@
   <div class="page-header-row">
     <div class="page-header" style="margin-bottom:0;">
       <h2>🎉 Alumni Events</h2>
-      <p>Upcoming reunions, seminars and gatherings</p>
+      <p>Upcoming reunions, seminars and gatherings — RSVP to let others know you're coming!</p>
     </div>
     {% if current_user.is_admin %}
       <a href="/admin/events/add" class="btn btn-primary">+ Add Event</a>
@@ -86,6 +101,9 @@
   <div class="events-grid" style="margin-top:24px;">
     {% for event in events %}
     {% set etype = event.event_type.lower() %}
+    {% set counts = rsvp_counts[event.id] %}
+    {% set my_rsvp = user_rsvps.get(event.id, '') %}
+
     <div class="event-card">
       <div class="event-banner {{ etype }}"></div>
       <div class="event-body">
@@ -93,7 +111,7 @@
         <div class="event-title">{{ event.title }}</div>
         {% if event.description %}
           <div class="event-desc">
-            {{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}
+            {{ event.description[:80] }}{% if event.description|length > 80 %}...{% endif %}
           </div>
         {% endif %}
         <div class="event-meta">
@@ -103,24 +121,75 @@
           {% endif %}
         </div>
       </div>
-      <div class="event-footer">
-        <span class="days-badge upcoming">Upcoming</span>
-        {% if current_user.is_admin %}
-          <form method="POST" action="/admin/events/delete/{{ event.id }}"
-                onsubmit="return confirm('Delete this event?')" style="margin:0;">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+
+      <!-- RSVP Section -->
+      <div class="rsvp-section">
+        <div class="rsvp-counts">
+          <div class="rsvp-count">✅ <strong>{{ counts.going }}</strong> going</div>
+          <div class="rsvp-count">🤔 <strong>{{ counts.maybe }}</strong> maybe</div>
+          <div class="rsvp-count">❌ <strong>{{ counts.not_going }}</strong> not going</div>
+        </div>
+        <div class="rsvp-buttons">
+          <form method="POST" action="/events/rsvp/{{ event.id }}" style="display:contents;">
+            <input type="hidden" name="status" value="going">
+            <button type="submit"
+              class="rsvp-btn going {{ 'active' if my_rsvp == 'going' }}">
+              ✅ Going
+            </button>
           </form>
-        {% endif %}
+          <form method="POST" action="/events/rsvp/{{ event.id }}" style="display:contents;">
+            <input type="hidden" name="status" value="maybe">
+            <button type="submit"
+              class="rsvp-btn maybe {{ 'active' if my_rsvp == 'maybe' }}">
+              🤔 Maybe
+            </button>
+          </form>
+          <form method="POST" action="/events/rsvp/{{ event.id }}" style="display:contents;">
+            <input type="hidden" name="status" value="not_going">
+            <button type="submit"
+              class="rsvp-btn not_going {{ 'active' if my_rsvp == 'not_going' }}">
+              ❌ No
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="event-footer">
+        <span style="font-size:11px;color:#94a3b8;">
+          {% if my_rsvp %}
+            Your RSVP:
+            <strong style="color:{{ '#16a34a' if my_rsvp == 'going' else '#d97706' if my_rsvp == 'maybe' else '#dc2626' }}">
+              {{ my_rsvp.replace('_', ' ').title() }}
+            </strong>
+          {% else %}
+            Not responded yet
+          {% endif %}
+        </span>
+        <div style="display:flex;gap:6px;">
+          {% if current_user.is_admin %}
+            <a href="/admin/events/{{ event.id }}/attendees"
+               class="btn btn-sm" style="background:#ede9fe;color:#6d28d9;border:none;">
+              👥 Attendees
+            </a>
+            <form method="POST" action="/admin/events/delete/{{ event.id }}"
+                  onsubmit="return confirm('Delete this event?')" style="margin:0;">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          {% endif %}
+        </div>
       </div>
     </div>
     {% endfor %}
   </div>
+
   {% else %}
   <div class="empty-state card" style="margin-top:24px;">
     <div class="empty-icon">📅</div>
     No events scheduled yet.
     {% if current_user.is_admin %}
-      <br><a href="/admin/events/add" class="btn btn-primary btn-sm" style="margin-top:12px;">+ Add First Event</a>
+      <br><a href="/admin/events/add" class="btn btn-primary btn-sm" style="margin-top:12px;">
+        + Add First Event
+      </a>
     {% endif %}
   </div>
   {% endif %}
