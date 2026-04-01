@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>{{ job.title }} — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .job-header {
+      background: linear-gradient(135deg,#0f172a,#1e1b4b);
+      border-radius: 16px; padding: 28px; margin-bottom: 20px;
+      display: flex; gap: 20px; align-items: flex-start;
+    }
+    .job-logo-lg {
+      width: 72px; height: 72px; border-radius: 16px; flex-shrink: 0;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; font-weight: 700; color: white;
+    }
+    .job-tag {
+      font-size: 12px; font-weight: 600; padding: 4px 12px;
+      border-radius: 20px; display: inline-block; margin-right: 6px; margin-top: 6px;
+    }
+    .tag-type     { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+    .tag-location { background: rgba(34,197,94,0.2);  color: #86efac; }
+    .tag-sector   { background: rgba(59,130,246,0.2); color: #93c5fd; }
+    .tag-salary   { background: rgba(245,158,11,0.2); color: #fcd34d; }
+    .section-title {
+      font-size: 15px; font-weight: 600; color: #0f172a;
+      margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;
+    }
+    .apply-box {
+      background: linear-gradient(135deg,#f8fafc,#ede9fe);
+      border: 1px solid #c4b5fd; border-radius: 14px; padding: 24px;
+      margin-bottom: 20px;
+    }
+    .applicant-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .applicant-row:last-child { border-bottom: none; }
+    .status-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 20px; margin-left: auto;
+    }
+    .status-pending  { background: #fef9c3; color: #854d0e; }
+    .status-reviewed { background: #dbeafe; color: #1e40af; }
+    .status-accepted { background: #dcfce7; color: #166534; }
+    .status-rejected { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/jobs">← Back to Jobs</a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container-md">
+
+  <!-- Job Header -->
+  <div class="job-header">
+    <div class="job-logo-lg">{{ job.company[0].upper() }}</div>
+    <div>
+      <h2 style="color:white;font-size:22px;font-weight:700;margin-bottom:6px;">{{ job.title }}</h2>
+      <div style="color:#94a3b8;font-size:14px;margin-bottom:10px;">
+        {{ job.company }}{% if job.location %} · 📍 {{ job.location }}{% endif %}
+      </div>
+      <div>
+        <span class="job-tag tag-type">{{ job.job_type }}</span>
+        {% if job.sector %}
+          <span class="job-tag tag-sector">{{ job.sector }}</span>
+        {% endif %}
+        {% if job.salary %}
+          <span class="job-tag tag-salary">💰 {{ job.salary }}</span>
+        {% endif %}
+        {% if job.deadline %}
+          <span class="job-tag" style="background:rgba(239,68,68,0.2);color:#fca5a5;">
+            ⏰ Deadline: {{ job.deadline }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}
+      <div class="alert alert-success">✅ {{ m }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;">
+
+    <!-- Left: Job details -->
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-title">📋 Job Description</div>
+        <p style="font-size:14px;color:#475569;line-height:1.8;white-space:pre-line;">
+          {{ job.description }}
+        </p>
+      </div>
+
+      {% if job.requirements %}
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-title">✅ Requirements</div>
+        <p style="font-size:14px;color:#475569;line-height:1.8;white-space:pre-line;">
+          {{ job.requirements }}
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- Applications (only for job poster or admin) -->
+      {% if applications %}
+      <div class="card">
+        <div class="section-title">
+          👥 Applications ({{ applications|length }})
+        </div>
+        {% for app in applications %}
+        <div class="applicant-row">
+          <div class="avatar c{{ (loop.index % 5) + 1 }}"
+               style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+            {{ app.applicant.full_name[0].upper() }}
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#0f172a;">
+              {{ app.applicant.full_name }}
+            </div>
+            <div style="font-size:12px;color:#94a3b8;">
+              Batch {{ app.applicant.batch_year or 'N/A' }} ·
+              Applied {{ app.created_at.strftime('%b %d, %Y') }}
+            </div>
+            {% if app.cover_letter %}
+              <div style="font-size:13px;color:#64748b;margin-top:4px;">
+                "{{ app.cover_letter[:80] }}{% if app.cover_letter|length > 80 %}...{% endif %}"
+              </div>
+            {% endif %}
+          </div>
+          <span class="status-badge status-{{ app.status }}">{{ app.status.title() }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: Apply box -->
+    <div>
+      <div class="apply-box">
+        <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:4px;">
+          Apply for this job
+        </div>
+        <div style="font-size:13px;color:#64748b;margin-bottom:16px;">
+          Posted by <strong>{{ poster.full_name if poster else 'Alumni' }}</strong>
+          on {{ job.created_at.strftime('%B %d, %Y') }}
+        </div>
+
+        {% if applied %}
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;
+                      padding:14px;text-align:center;">
+            <div style="font-size:18px;margin-bottom:6px;">✅</div>
+            <div style="font-size:14px;font-weight:600;color:#16a34a;">
+              Application Submitted!
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px;">
+              Applied on {{ applied.created_at.strftime('%B %d, %Y') }}
+            </div>
+          </div>
+        {% elif job.posted_by == current_user.id %}
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
+                      padding:14px;text-align:center;">
+            <div style="font-size:13px;color:#94a3b8;">This is your job posting</div>
+          </div>
+        {% else %}
+          <form method="POST" action="/jobs/{{ job.id }}/apply">
+            <div class="form-group">
+              <label style="font-size:12px;color:#64748b;font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.5px;">
+                Cover Letter (optional)
+              </label>
+              <textarea name="cover_letter" rows="4"
+                style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;
+                       border-radius:10px;font-size:13px;resize:vertical;
+                       font-family:inherit;outline:none;"
+                placeholder="Briefly introduce yourself and why you're a good fit..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">
+              📨 Submit Application
+            </button>
+          </form>
+        {% endif %}
+      </div>
+
+      <!-- Job poster info -->
+      {% if poster %}
+      <div class="card">
+        <div class="section-title">Posted by</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="avatar c1" style="width:44px;height:44px;flex-shrink:0;">
+            {{ poster.full_name[0].upper() }}
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#0f172a;">
+              {{ poster.full_name }}
+            </div>
+            <div style="font-size:12px;color:#94a3b8;">
+              {{ poster.job_title or 'BCA Alumni' }}
+              {% if poster.company %} at {{ poster.company }}{% endif %}
+            </div>
+            <div style="font-size:12px;color:#94a3b8;">Batch {{ poster.batch_year or 'N/A' }}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

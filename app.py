@@ -54,7 +54,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP, Follow
+from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -803,6 +803,133 @@ def my_network():
         suggested=suggested,
         following_ids=following_ids
     )
+
+# =============================================================================
+# JOB BOARD ROUTES
+# =============================================================================
+
+@app.route('/jobs')
+@login_required
+def jobs():
+    sector   = request.args.get('sector', '')
+    job_type = request.args.get('job_type', '')
+    search   = request.args.get('search', '')
+    query    = Job.query.filter_by(is_active=True)
+    if sector:
+        query = query.filter_by(sector=sector)
+    if job_type:
+        query = query.filter_by(job_type=job_type)
+    if search:
+        query = query.filter(
+            Job.title.ilike(f'%{search}%') |
+            Job.company.ilike(f'%{search}%')
+        )
+    all_jobs = query.order_by(Job.created_at.desc()).all()
+
+    # Get current user's applications
+    applied_job_ids = [a.job_id for a in
+                       JobApplication.query.filter_by(applicant_id=current_user.id).all()]
+
+    # Get poster info for each job
+    posters = {j.id: Student.query.get(j.posted_by) for j in all_jobs}
+
+    sectors   = ['IT / Software', 'Banking / Finance', 'Education / Teaching',
+                 'Government / Civil Service', 'Healthcare',
+                 'Business / Entrepreneurship', 'Other']
+    job_types = ['Full Time', 'Part Time', 'Remote', 'Internship', 'Contract']
+
+    return render_template('jobs.html',
+        jobs=all_jobs, applied_job_ids=applied_job_ids,
+        posters=posters, sectors=sectors, job_types=job_types,
+        sector=sector, job_type=job_type, search=search)
+
+@app.route('/jobs/post', methods=['GET', 'POST'])
+@login_required
+def post_job():
+    if request.method == 'POST':
+        job = Job(
+            posted_by    = current_user.id,
+            title        = request.form.get('title'),
+            company      = request.form.get('company'),
+            location     = request.form.get('location'),
+            job_type     = request.form.get('job_type'),
+            sector       = request.form.get('sector'),
+            description  = request.form.get('description'),
+            requirements = request.form.get('requirements'),
+            salary       = request.form.get('salary'),
+            deadline     = request.form.get('deadline'),
+        )
+        db.session.add(job)
+        db.session.commit()
+        flash('Job posted successfully!')
+        return redirect(url_for('jobs'))
+    sectors   = ['IT / Software', 'Banking / Finance', 'Education / Teaching',
+                 'Government / Civil Service', 'Healthcare',
+                 'Business / Entrepreneurship', 'Other']
+    job_types = ['Full Time', 'Part Time', 'Remote', 'Internship', 'Contract']
+    return render_template('post_job.html', sectors=sectors, job_types=job_types)
+
+@app.route('/jobs/<int:job_id>')
+@login_required
+def job_detail(job_id):
+    job     = Job.query.get_or_404(job_id)
+    poster  = Student.query.get(job.posted_by)
+    applied = JobApplication.query.filter_by(
+        job_id=job_id, applicant_id=current_user.id
+    ).first()
+    applications = []
+    if current_user.id == job.posted_by or current_user.is_admin:
+        applications = JobApplication.query.filter_by(job_id=job_id).all()
+        for app in applications:
+            app.applicant = Student.query.get(app.applicant_id)
+    return render_template('job_detail.html',
+        job=job, poster=poster, applied=applied,
+        applications=applications)
+
+@app.route('/jobs/<int:job_id>/apply', methods=['POST'])
+@login_required
+def apply_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    existing = JobApplication.query.filter_by(
+        job_id=job_id, applicant_id=current_user.id
+    ).first()
+    if existing:
+        flash('You have already applied for this job.')
+        return redirect(url_for('job_detail', job_id=job_id))
+    if job.posted_by == current_user.id:
+        flash('You cannot apply to your own job posting.')
+        return redirect(url_for('job_detail', job_id=job_id))
+    application = JobApplication(
+        job_id       = job_id,
+        applicant_id = current_user.id,
+        cover_letter = request.form.get('cover_letter', '')
+    )
+    db.session.add(application)
+    db.session.commit()
+    flash('Application submitted successfully!')
+    return redirect(url_for('job_detail', job_id=job_id))
+
+@app.route('/jobs/<int:job_id>/delete', methods=['POST'])
+@login_required
+def delete_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.posted_by != current_user.id and not current_user.is_admin:
+        flash('You can only delete your own job postings.')
+        return redirect(url_for('jobs'))
+    JobApplication.query.filter_by(job_id=job_id).delete()
+    db.session.delete(job)
+    db.session.commit()
+    flash('Job posting deleted.')
+    return redirect(url_for('jobs'))
+
+@app.route('/my-jobs')
+@login_required
+def my_jobs():
+    posted = Job.query.filter_by(posted_by=current_user.id).all()
+    applied = JobApplication.query.filter_by(applicant_id=current_user.id).all()
+    for a in applied:
+        a.job = Job.query.get(a.job_id)
+    return render_template('my_jobs.html', posted=posted, applied=applied)
 
 @app.route('/logout')
 @login_required

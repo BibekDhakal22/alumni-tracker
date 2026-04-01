@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>Job Board — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .job-card {
+      background: white; border-radius: 14px; padding: 22px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      transition: transform 0.15s, box-shadow 0.15s; margin-bottom: 14px;
+      display: flex; gap: 18px; align-items: flex-start;
+    }
+    .job-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .job-logo {
+      width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700; color: white;
+    }
+    .job-main { flex: 1; }
+    .job-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+    .job-company { font-size: 14px; color: #64748b; margin-bottom: 8px; }
+    .job-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .job-tag {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .tag-type     { background: #ede9fe; color: #6d28d9; }
+    .tag-location { background: #f0fdf4; color: #16a34a; }
+    .tag-sector   { background: #eff6ff; color: #1d4ed8; }
+    .tag-salary   { background: #fefce8; color: #854d0e; }
+    .job-desc { font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 12px; }
+    .job-footer {
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 8px;
+    }
+    .job-meta { font-size: 12px; color: #94a3b8; }
+    .applied-badge {
+      background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .post-btn-wrap { text-align: right; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/jobs" class="active">Jobs</a>
+    <a href="/my-jobs">My Jobs</a>
+    <a href="/directory">Directory</a>
+    {% if current_user.is_admin %}<a href="/admin">Admin</a>{% endif %}
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header-row">
+    <div class="page-header" style="margin-bottom:0;">
+      <h2>💼 Alumni Job Board</h2>
+      <p>Jobs posted by and for BCA alumni — find or share opportunities</p>
+    </div>
+    <a href="/jobs/post" class="btn btn-primary">+ Post a Job</a>
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}
+      <div class="alert alert-success" style="margin-top:16px;">✅ {{ m }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <!-- Filters -->
+  <form method="GET" action="/jobs">
+    <div class="filters-bar" style="margin-top:20px;">
+      <div class="filter-group" style="flex:2;">
+        <label>Search</label>
+        <input type="text" name="search" placeholder="Job title or company" value="{{ search }}">
+      </div>
+      <div class="filter-group">
+        <label>Job Type</label>
+        <select name="job_type">
+          <option value="">All types</option>
+          {% for t in job_types %}
+            <option value="{{ t }}" {{ 'selected' if job_type == t }}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Sector</label>
+        <select name="sector">
+          <option value="">All sectors</option>
+          {% for s in sectors %}
+            <option value="{{ s }}" {{ 'selected' if sector == s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="padding-top:18px;">
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      </div>
+    </div>
+  </form>
+
+  <p class="text-muted" style="margin:16px 0;">
+    Showing <strong>{{ jobs|length }}</strong> job{{ 's' if jobs|length != 1 }}
+  </p>
+
+  {% if jobs %}
+    {% for job in jobs %}
+    {% set poster = posters[job.id] %}
+    <div class="job-card">
+      <div class="job-logo">{{ job.company[0].upper() }}</div>
+      <div class="job-main">
+        <div class="job-title">{{ job.title }}</div>
+        <div class="job-company">
+          {{ job.company }}
+          {% if job.location %} · 📍 {{ job.location }}{% endif %}
+        </div>
+        <div class="job-tags">
+          <span class="job-tag tag-type">{{ job.job_type }}</span>
+          {% if job.sector %}
+            <span class="job-tag tag-sector">{{ job.sector }}</span>
+          {% endif %}
+          {% if job.salary %}
+            <span class="job-tag tag-salary">💰 {{ job.salary }}</span>
+          {% endif %}
+          {% if job.deadline %}
+            <span class="job-tag" style="background:#fef2f2;color:#dc2626;">
+              ⏰ Deadline: {{ job.deadline }}
+            </span>
+          {% endif %}
+        </div>
+        <div class="job-desc">
+          {{ job.description[:150] }}{% if job.description|length > 150 %}...{% endif %}
+        </div>
+        <div class="job-footer">
+          <div class="job-meta">
+            Posted by <strong>{{ poster.full_name if poster else 'Alumni' }}</strong>
+            · {{ job.created_at.strftime('%b %d, %Y') }}
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            {% if job.id in applied_job_ids %}
+              <span class="applied-badge">✓ Applied</span>
+            {% endif %}
+            <a href="/jobs/{{ job.id }}" class="btn btn-primary btn-sm">View & Apply →</a>
+            {% if job.posted_by == current_user.id or current_user.is_admin %}
+              <form method="POST" action="/jobs/{{ job.id }}/delete"
+                    onsubmit="return confirm('Delete this job?')" style="margin:0;">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state card">
+      <div class="empty-icon">💼</div>
+      No jobs posted yet.
+      <br><a href="/jobs/post" class="btn btn-primary btn-sm" style="margin-top:12px;">
+        + Post the First Job
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

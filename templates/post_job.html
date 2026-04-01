@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>Post a Job — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/jobs">← Back to Jobs</a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container-md">
+  <div class="page-header">
+    <h2>💼 Post a Job</h2>
+    <p>Share a job opportunity with fellow BCA alumni</p>
+  </div>
+
+  <form method="POST">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Job Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Job Title *</label>
+          <input type="text" name="title" placeholder="e.g. Python Developer" required>
+        </div>
+        <div class="form-group">
+          <label>Company / Organization *</label>
+          <input type="text" name="company" placeholder="e.g. Leapfrog Technology" required>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" name="location" placeholder="e.g. Kathmandu, Nepal / Remote">
+        </div>
+        <div class="form-group">
+          <label>Job Type</label>
+          <select name="job_type">
+            {% for t in job_types %}
+              <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sector</label>
+          <select name="sector">
+            <option value="">— Select sector —</option>
+            {% for s in sectors %}
+              <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Salary Range</label>
+          <input type="text" name="salary" placeholder="e.g. NPR 50,000 - 80,000">
+        </div>
+        <div class="form-group">
+          <label>Application Deadline</label>
+          <input type="text" name="deadline" placeholder="e.g. April 30, 2025">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Description & Requirements</div>
+      <div class="form-group">
+        <label>Job Description *</label>
+        <textarea name="description" rows="5"
+                  placeholder="Describe the role, responsibilities and what the job involves..."
+                  required style="min-height:120px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Requirements</label>
+        <textarea name="requirements" rows="4"
+                  placeholder="List required skills, experience and qualifications..."
+                  style="min-height:100px;"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary">📢 Post Job</button>
+      <a href="/jobs" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

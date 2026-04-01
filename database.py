@@ -125,3 +125,34 @@ class Follow(db.Model):
     follower_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     following_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)    
+
+# -----------------------------------------------------------------------------
+# JOB TABLE
+# Stores job postings by alumni
+# -----------------------------------------------------------------------------
+class Job(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    posted_by    = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    title        = db.Column(db.String(200), nullable=False)
+    company      = db.Column(db.String(200), nullable=False)
+    location     = db.Column(db.String(200))
+    job_type     = db.Column(db.String(50), default='Full Time')  # Full Time, Part Time, Remote, Internship
+    sector       = db.Column(db.String(100))
+    description  = db.Column(db.Text, nullable=False)
+    requirements = db.Column(db.Text)
+    salary       = db.Column(db.String(100))
+    deadline     = db.Column(db.String(50))
+    is_active    = db.Column(db.Boolean, default=True)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+
+# -----------------------------------------------------------------------------
+# JOB APPLICATION TABLE
+# Stores applications submitted by alumni for jobs
+# -----------------------------------------------------------------------------
+class JobApplication(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    job_id       = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)
+    applicant_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    cover_letter = db.Column(db.Text)
+    status       = db.Column(db.String(20), default='pending')  # pending, reviewed, accepted, rejected
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)

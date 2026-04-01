@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>My Jobs — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/jobs">Job Board</a>
+    <a href="/my-jobs" class="active">My Jobs</a>
+    <a href="/dashboard">Dashboard</a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container-md">
+  <div class="page-header">
+    <h2>💼 My Jobs</h2>
+    <p>Jobs you posted and applications you submitted</p>
+  </div>
+
+  <!-- Posted Jobs -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title">
+      Jobs I Posted ({{ posted|length }})
+      <a href="/jobs/post" class="btn btn-primary btn-sm">+ Post New</a>
+    </div>
+    {% if posted %}
+      {% for job in posted %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  padding:14px 0;border-bottom:1px solid #f1f5f9;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#0f172a;">{{ job.title }}</div>
+          <div style="font-size:12px;color:#94a3b8;">
+            {{ job.company }} · {{ job.job_type }} ·
+            Posted {{ job.created_at.strftime('%b %d, %Y') }}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          {% set app_count = job.id %}
+          <a href="/jobs/{{ job.id }}" class="btn btn-ghost btn-sm">View</a>
+          <form method="POST" action="/jobs/{{ job.id }}/delete"
+                onsubmit="return confirm('Delete this job?')" style="margin:0;">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:24px;">
+        <div class="empty-icon">📝</div>
+        You haven't posted any jobs yet.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Applied Jobs -->
+  <div class="card">
+    <div class="card-title">Jobs I Applied For ({{ applied|length }})</div>
+    {% if applied %}
+      {% for app in applied %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  padding:14px 0;border-bottom:1px solid #f1f5f9;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#0f172a;">
+            {{ app.job.title if app.job else 'Job removed' }}
+          </div>
+          <div style="font-size:12px;color:#94a3b8;">
+            {% if app.job %}{{ app.job.company }} · {% endif %}
+            Applied {{ app.created_at.strftime('%b %d, %Y') }}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="badge
+            {% if app.status == 'accepted' %}badge-edu
+            {% elif app.status == 'rejected' %}badge-none
+            {% elif app.status == 'reviewed' %}badge-it
+            {% else %}badge-gov{% endif %}">
+            {{ app.status.title() }}
+          </span>
+          {% if app.job %}
+            <a href="/jobs/{{ app.job_id }}" class="btn btn-ghost btn-sm">View</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:24px;">
+        <div class="empty-icon">📨</div>
+        You haven't applied for any jobs yet.
+        <br><a href="/jobs" class="btn btn-primary btn-sm" style="margin-top:12px;">
+          Browse Jobs →
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
