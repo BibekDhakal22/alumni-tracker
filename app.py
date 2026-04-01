@@ -54,7 +54,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP
+from database import db, Student, Notice, Message, Event, RSVP, Follow
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -296,14 +296,23 @@ def directory():
     if batch:
         query = query.filter_by(batch_year=batch)
     students = query.all()
-    batches  = sorted(set(s.batch_year for s in Student.query.filter_by(is_admin=False).all() if s.batch_year))
+    batches  = sorted(set(s.batch_year for s in
+                          Student.query.filter_by(is_admin=False).all() if s.batch_year))
     sectors  = ['IT / Software', 'Banking / Finance', 'Education / Teaching',
                 'Government / Civil Service', 'Healthcare',
                 'Business / Entrepreneurship', 'Higher Studies (Not working)', 'Other']
+
+    # Get current user's following list
+    following_ids = [f.following_id for f in
+                     Follow.query.filter_by(follower_id=current_user.id).all()]
+
     return render_template('directory.html', students=students,
                            search=search, sector=sector,
-                           batch=batch, batches=batches, sectors=sectors)    
+                           batch=batch, batches=batches, sectors=sectors,
+                           following_ids=following_ids)
 
+
+                           
 @app.route('/notices')
 @login_required
 def notices():
@@ -736,6 +745,64 @@ def search_suggestions():
             'initial':    s.full_name[0].upper()
         })
     return jsonify(results)
+
+@app.route('/follow/<int:student_id>', methods=['POST'])
+@login_required
+def follow(student_id):
+    if student_id == current_user.id:
+        flash('You cannot follow yourself.')
+        return redirect(url_for('directory'))
+    existing = Follow.query.filter_by(
+        follower_id=current_user.id,
+        following_id=student_id
+    ).first()
+    if not existing:
+        follow = Follow(
+            follower_id  = current_user.id,
+            following_id = student_id
+        )
+        db.session.add(follow)
+        db.session.commit()
+    return redirect(request.referrer or url_for('directory'))
+
+@app.route('/unfollow/<int:student_id>', methods=['POST'])
+@login_required
+def unfollow(student_id):
+    follow = Follow.query.filter_by(
+        follower_id  = current_user.id,
+        following_id = student_id
+    ).first()
+    if follow:
+        db.session.delete(follow)
+        db.session.commit()
+    return redirect(request.referrer or url_for('directory'))
+
+@app.route('/my-network')
+@login_required
+def my_network():
+    # People current user follows
+    following_ids = [f.following_id for f in
+                     Follow.query.filter_by(follower_id=current_user.id).all()]
+    following = Student.query.filter(Student.id.in_(following_ids)).all()
+
+    # People who follow current user
+    follower_ids = [f.follower_id for f in
+                    Follow.query.filter_by(following_id=current_user.id).all()]
+    followers = Student.query.filter(Student.id.in_(follower_ids)).all()
+
+    # Suggested alumni (not already following, not self)
+    exclude_ids = following_ids + [current_user.id]
+    suggested = Student.query.filter(
+        Student.is_admin == False,
+        ~Student.id.in_(exclude_ids)
+    ).limit(6).all()
+
+    return render_template('my_network.html',
+        following=following,
+        followers=followers,
+        suggested=suggested,
+        following_ids=following_ids
+    )
 
 @app.route('/logout')
 @login_required

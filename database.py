@@ -113,3 +113,15 @@ class RSVP(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     status     = db.Column(db.String(20), nullable=False)  # 'going', 'maybe', 'not_going'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+
+# -----------------------------------------------------------------------------
+# FOLLOW TABLE
+# Stores follow relationships between alumni
+# -----------------------------------------------------------------------------
+class Follow(db.Model):
+    id          = db.Column(db.Integer, primary_key=True)
+    follower_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    following_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)    

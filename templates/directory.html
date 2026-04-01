@@ -182,6 +182,25 @@
             <span class="badge badge-none">No sector info</span>
           {% endif %}
         </div>
+        <!-- Follow button -->
+        <div style="margin-top:12px;">
+          {% if s.id != current_user.id %}
+            {% if s.id in following_ids %}
+              <form method="POST" action="/unfollow/{{ s.id }}" style="margin:0;">
+                <button type="submit" class="btn btn-ghost btn-sm"
+                        style="width:100%;color:#ef4444;border-color:#fecaca;">
+                  ✓ Following
+                </button>
+              </form>
+            {% else %}
+              <form method="POST" action="/follow/{{ s.id }}" style="margin:0;">
+                <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">
+                  + Follow
+                </button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </div>
       </div>
       {% endfor %}
     {% else %}

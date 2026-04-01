@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Network — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .network-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+    .person-card {
+      background: white; border-radius: 14px; padding: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; gap: 10px; transition: transform 0.15s;
+    }
+    .person-card:hover { transform: translateY(-2px); }
+    .person-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .person-sub  { font-size: 12px; color: #94a3b8; }
+    .person-job  { font-size: 12px; color: #64748b; }
+    .tabs {
+      display: flex; gap: 4px; background: #f1f5f9;
+      padding: 4px; border-radius: 10px; margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1; padding: 8px 16px; border-radius: 8px; font-size: 14px;
+      font-weight: 500; cursor: pointer; border: none; background: none;
+      color: #64748b; transition: all 0.15s; text-align: center;
+    }
+    .tab.active { background: white; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .count-badge {
+      background: #6366f1; color: white; font-size: 11px; font-weight: 700;
+      padding: 1px 7px; border-radius: 20px; margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/directory">Directory</a>
+    <a href="/my-network" class="active">My Network</a>
+    <a href="/notices">Notices</a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h2>🌐 My Network</h2>
+    <p>Manage your alumni connections</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+    <div class="stat-card purple">
+      <div class="stat-lbl">Following</div>
+      <div class="stat-val">{{ following|length }}</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-lbl">Followers</div>
+      <div class="stat-val">{{ followers|length }}</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-lbl">Suggested</div>
+      <div class="stat-val">{{ suggested|length }}</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('following')">
+      Following <span class="count-badge">{{ following|length }}</span>
+    </button>
+    <button class="tab" onclick="showTab('followers')">
+      Followers <span class="count-badge">{{ followers|length }}</span>
+    </button>
+    <button class="tab" onclick="showTab('suggested')">
+      Suggested <span class="count-badge">{{ suggested|length }}</span>
+    </button>
+  </div>
+
+  <!-- Following Tab -->
+  <div class="tab-content active" id="tab-following">
+    {% if following %}
+    <div class="network-grid">
+      {% for s in following %}
+      <div class="person-card">
+        <div class="avatar c{{ (loop.index % 5) + 1 }} lg">{{ s.full_name[0].upper() }}</div>
+        <div>
+          <div class="person-name">{{ s.full_name }}</div>
+          <div class="person-sub">Batch {{ s.batch_year or 'N/A' }}</div>
+          <div class="person-job">{{ s.job_title or 'Not updated' }}</div>
+        </div>
+        <form method="POST" action="/unfollow/{{ s.id }}" style="margin:0;">
+          <button type="submit" class="btn btn-ghost btn-sm"
+                  style="color:#ef4444;border-color:#fecaca;">
+            Unfollow
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card">
+      <div class="empty-icon">👥</div>
+      You are not following anyone yet.
+      <br><a href="/directory" class="btn btn-primary btn-sm" style="margin-top:12px;">
+        Browse Alumni →
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Followers Tab -->
+  <div class="tab-content" id="tab-followers">
+    {% if followers %}
+    <div class="network-grid">
+      {% for s in followers %}
+      <div class="person-card">
+        <div class="avatar c{{ (loop.index % 5) + 1 }} lg">{{ s.full_name[0].upper() }}</div>
+        <div>
+          <div class="person-name">{{ s.full_name }}</div>
+          <div class="person-sub">Batch {{ s.batch_year or 'N/A' }}</div>
+          <div class="person-job">{{ s.job_title or 'Not updated' }}</div>
+        </div>
+        {% if s.id not in following_ids %}
+        <form method="POST" action="/follow/{{ s.id }}" style="margin:0;">
+          <button type="submit" class="btn btn-primary btn-sm">Follow back</button>
+        </form>
+        {% else %}
+        <span class="badge badge-it">Following</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card">
+      <div class="empty-icon">👤</div>
+      No one is following you yet.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Suggested Tab -->
+  <div class="tab-content" id="tab-suggested">
+    {% if suggested %}
+    <div class="network-grid">
+      {% for s in suggested %}
+      <div class="person-card">
+        <div class="avatar c{{ (loop.index % 5) + 1 }} lg">{{ s.full_name[0].upper() }}</div>
+        <div>
+          <div class="person-name">{{ s.full_name }}</div>
+          <div class="person-sub">Batch {{ s.batch_year or 'N/A' }}</div>
+          <div class="person-job">
+            {{ s.job_title or 'Not updated' }}
+            {% if s.company %} at {{ s.company }}{% endif %}
+          </div>
+        </div>
+        <form method="POST" action="/follow/{{ s.id }}" style="margin:0;">
+          <button type="submit" class="btn btn-primary btn-sm">+ Follow</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card">
+      <div class="empty-icon">🎉</div>
+      You're following everyone!
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script src="/static/js/main.js"></script>
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
