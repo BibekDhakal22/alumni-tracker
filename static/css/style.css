@@ -449,3 +449,15 @@ body.dark .text-muted   { color: #64748b; }
   cursor: pointer; font-size: 14px; transition: all 0.15s;
 }
 .dark-toggle:hover { background: #1e293b; color: #e2e8f0; }
+
+
+
+/* ===== PAGE TRANSITIONS ===== */
+.container, .container-md, .container-sm {
+  animation: fadeUp 0.3s ease forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

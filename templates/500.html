@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Server Error — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1a0a2e 50%, #0f172a 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .error-wrap { text-align: center; padding: 40px; max-width: 500px; }
+    .error-code {
+      font-size: 120px; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, #ef4444, #f59e0b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 8px;
+    }
+    .error-title { font-size: 24px; font-weight: 700; color: white; margin-bottom: 12px; }
+    .error-msg   { font-size: 15px; color: #94a3b8; margin-bottom: 32px; line-height: 1.6; }
+    .error-icon  { font-size: 48px; margin-bottom: 16px; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .btn-home {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white; padding: 12px 28px; border-radius: 12px;
+      text-decoration: none; font-size: 15px; font-weight: 600;
+      transition: all 0.2s; box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+    }
+    .btn-home:hover { transform: translateY(-2px); }
+    .btn-retry {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.08); color: #94a3b8;
+      padding: 12px 28px; border-radius: 12px; text-decoration: none;
+      font-size: 15px; font-weight: 500; margin-left: 12px;
+      border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;
+      cursor: pointer;
+    }
+    .btn-retry:hover { background: rgba(255,255,255,0.12); color: white; }
+  </style>
+</head>
+<body>
+  <div class="error-wrap">
+    <div class="error-icon pulse">⚠️</div>
+    <div class="error-code">500</div>
+    <div class="error-title">Something Went Wrong</div>
+    <div class="error-msg">
+      Our server encountered an unexpected error. This is not your fault!
+      Please try again or go back to the dashboard.
+    </div>
+    <a href="/dashboard" class="btn-home">🏠 Go to Dashboard</a>
+    <a onclick="location.reload()" class="btn-retry">🔄 Try Again</a>
+  </div>
+</body>
+</html>

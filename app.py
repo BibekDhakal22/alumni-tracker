@@ -312,7 +312,7 @@ def directory():
                            following_ids=following_ids)
 
 
-                           
+
 @app.route('/notices')
 @login_required
 def notices():
@@ -828,3 +828,17 @@ if __name__ == '__main__':
             db.session.commit()
             print('Test admin created: ID=admin, Password=9800000000')
     app.run(debug=True)
+
+
+
+# =============================================================================
+# ERROR HANDLERS
+# =============================================================================
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template('500.html'), 500

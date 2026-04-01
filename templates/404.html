@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Page Not Found — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .error-wrap { text-align: center; padding: 40px; max-width: 500px; }
+    .error-code {
+      font-size: 120px; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 8px;
+    }
+    .error-title { font-size: 24px; font-weight: 700; color: white; margin-bottom: 12px; }
+    .error-msg   { font-size: 15px; color: #94a3b8; margin-bottom: 32px; line-height: 1.6; }
+    .error-icon  { font-size: 48px; margin-bottom: 16px; }
+    .btn-home {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white; padding: 12px 28px; border-radius: 12px;
+      text-decoration: none; font-size: 15px; font-weight: 600;
+      transition: all 0.2s; box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+    }
+    .btn-home:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(99,102,241,0.5); }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.08); color: #94a3b8;
+      padding: 12px 28px; border-radius: 12px; text-decoration: none;
+      font-size: 15px; font-weight: 500; margin-left: 12px;
+      border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.12); color: white; }
+    .floating {
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="error-wrap">
+    <div class="error-icon floating">🎓</div>
+    <div class="error-code">404</div>
+    <div class="error-title">Page Not Found</div>
+    <div class="error-msg">
+      Oops! The page you're looking for doesn't exist or has been moved.
+      Don't worry — let's get you back on track.
+    </div>
+    <a href="/dashboard" class="btn-home">🏠 Go to Dashboard</a>
+    <a href="javascript:history.back()" class="btn-back">← Go Back</a>
+  </div>
+</body>
+</html>
