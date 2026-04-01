@@ -706,6 +706,37 @@ def event_attendees(event_id):
         not_going=[get_student(r) for r in not_going]
     )
 
+@app.route('/api/search-suggestions')
+@login_required
+def search_suggestions():
+    from flask import jsonify
+    query = request.args.get('q', '').strip()
+    if len(query) < 2:
+        return jsonify([])
+    students = Student.query.filter(
+        Student.is_admin == False,
+        db.or_(
+            Student.full_name.ilike(f'%{query}%'),
+            Student.student_id.ilike(f'%{query}%'),
+            Student.company.ilike(f'%{query}%'),
+            Student.job_title.ilike(f'%{query}%'),
+            Student.address.ilike(f'%{query}%'),
+        )
+    ).limit(6).all()
+
+    results = []
+    for s in students:
+        results.append({
+            'name':       s.full_name,
+            'student_id': s.student_id,
+            'batch':      s.batch_year or 'N/A',
+            'job':        s.job_title or '',
+            'company':    s.company or '',
+            'sector':     s.job_sector or '',
+            'initial':    s.full_name[0].upper()
+        })
+    return jsonify(results)
+
 @app.route('/logout')
 @login_required
 def logout():

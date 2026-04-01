@@ -5,8 +5,74 @@
   <title>Alumni Directory — Alumni Tracker</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <style>
-    .dir-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-    .info-row { display:flex; align-items:center; gap:8px; font-size:13px; color:#64748b; margin-bottom:5px; }
+    .dir-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+    }
+    .info-row {
+      display:flex; align-items:center; gap:8px;
+      font-size:13px; color:#64748b; margin-bottom:5px;
+    }
+
+    /* Autocomplete */
+    .search-wrap { position: relative; flex: 1; }
+    .autocomplete-box {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: white; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100;
+      overflow: hidden; display: none;
+    }
+    .autocomplete-box.show { display: block; }
+
+    .suggestion-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; cursor: pointer;
+      transition: background 0.1s; border-bottom: 1px solid #f1f5f9;
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: #f8fafc; }
+
+    .sug-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+    }
+
+    .sug-name   { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .sug-detail { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+
+    .sug-badge {
+      margin-left: auto; font-size: 11px; font-weight: 500;
+      background: #ede9fe; color: #6d28d9;
+      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    }
+
+    .sug-loading {
+      padding: 14px; text-align: center;
+      font-size: 13px; color: #94a3b8;
+    }
+
+    .sug-empty {
+      padding: 14px; text-align: center;
+      font-size: 13px; color: #94a3b8;
+    }
+
+    .search-hint {
+      font-size: 11px; color: #94a3b8; margin-top: 6px;
+    }
+
+    /* Highlight matched text */
+    .highlight { background: #fef08a; border-radius: 2px; padding: 0 1px; }
+
+    /* Alumni cards */
+    .alumni-card {
+      background: white; border-radius: 14px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .alumni-card:hover {
+      transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
@@ -33,12 +99,23 @@
     <p>Browse and connect with fellow BCA alumni</p>
   </div>
 
-  <form method="GET" action="/directory">
+  <form method="GET" action="/directory" id="searchForm">
     <div class="filters-bar">
-      <div class="filter-group">
-        <label>Search by name</label>
-        <input type="text" name="search" placeholder="e.g. Ram Thapa" value="{{ search }}">
+
+      <!-- Search with autocomplete -->
+      <div class="filter-group" style="flex:2;">
+        <label>Search by name, ID, company or job</label>
+        <div class="search-wrap">
+          <input type="text" name="search" id="searchInput"
+                 placeholder="e.g. Ram Thapa, Leapfrog, Software Developer"
+                 value="{{ search }}" autocomplete="off"
+                 oninput="handleSearch(this.value)"
+                 onkeydown="handleKey(event)">
+          <div class="autocomplete-box" id="autocompleteBox"></div>
+        </div>
+        <div class="search-hint">Start typing to see suggestions instantly</div>
       </div>
+
       <div class="filter-group">
         <label>Batch Year</label>
         <select name="batch">
@@ -48,6 +125,7 @@
           {% endfor %}
         </select>
       </div>
+
       <div class="filter-group">
         <label>Job Sector</label>
         <select name="sector">
@@ -57,13 +135,14 @@
           {% endfor %}
         </select>
       </div>
+
       <div style="padding-top:18px;">
         <button type="submit" class="btn btn-primary btn-sm">Search</button>
       </div>
     </div>
   </form>
 
-  <p class="text-muted mb-16">Showing {{ students|length }} alumni</p>
+  <p class="text-muted mb-16">Showing <strong>{{ students|length }}</strong> alumni</p>
 
   {% set badge_map = {
     'IT / Software': 'badge-it', 'Banking / Finance': 'badge-bank',
@@ -113,6 +192,107 @@
     {% endif %}
   </div>
 </div>
+
 <script src="/static/js/main.js"></script>
+<script>
+  let searchTimeout = null;
+  let selectedIndex = -1;
+  let suggestions   = [];
+
+  function handleSearch(value) {
+    clearTimeout(searchTimeout);
+    const box = document.getElementById('autocompleteBox');
+
+    if (value.length < 2) {
+      box.classList.remove('show');
+      return;
+    }
+
+    box.innerHTML = '<div class="sug-loading">🔍 Searching...</div>';
+    box.classList.add('show');
+
+    searchTimeout = setTimeout(() => fetchSuggestions(value), 250);
+  }
+
+  async function fetchSuggestions(query) {
+    const box = document.getElementById('autocompleteBox');
+    try {
+      const res  = await fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}`);
+      suggestions = await res.json();
+      selectedIndex = -1;
+
+      if (suggestions.length === 0) {
+        box.innerHTML = '<div class="sug-empty">No alumni found matching your search</div>';
+        return;
+      }
+
+      box.innerHTML = suggestions.map((s, i) => `
+        <div class="suggestion-item" onclick="selectSuggestion('${s.name}')"
+             id="sug-${i}" data-index="${i}">
+          <div class="sug-avatar">${s.initial}</div>
+          <div>
+            <div class="sug-name">${highlight(s.name, query)}</div>
+            <div class="sug-detail">
+              ${s.batch ? `Batch ${s.batch}` : ''}
+              ${s.job ? ` · ${s.job}` : ''}
+              ${s.company ? ` at ${s.company}` : ''}
+            </div>
+          </div>
+          ${s.sector ? `<span class="sug-badge">${s.sector.split('/')[0].trim()}</span>` : ''}
+        </div>
+      `).join('');
+
+    } catch (e) {
+      box.innerHTML = '<div class="sug-empty">Error loading suggestions</div>';
+    }
+  }
+
+  function highlight(text, query) {
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<span class="highlight">$1</span>');
+  }
+
+  function selectSuggestion(name) {
+    document.getElementById('searchInput').value = name;
+    document.getElementById('autocompleteBox').classList.remove('show');
+    document.getElementById('searchForm').submit();
+  }
+
+  function handleKey(e) {
+    const box   = document.getElementById('autocompleteBox');
+    const items = box.querySelectorAll('.suggestion-item');
+
+    if (!box.classList.contains('show')) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+      updateSelection(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, -1);
+      updateSelection(items);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(suggestions[selectedIndex].name);
+    } else if (e.key === 'Escape') {
+      box.classList.remove('show');
+      selectedIndex = -1;
+    }
+  }
+
+  function updateSelection(items) {
+    items.forEach((item, i) => {
+      item.style.background = i === selectedIndex ? '#f0f0ff' : '';
+    });
+  }
+
+  // Close autocomplete when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrap')) {
+      document.getElementById('autocompleteBox').classList.remove('show');
+    }
+  });
+</script>
 </body>
 </html>
