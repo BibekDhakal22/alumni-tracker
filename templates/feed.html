@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>Feed — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .feed-layout {
+      display: grid; grid-template-columns: 1fr 300px; gap: 20px;
+      max-width: 960px; margin: 0 auto; padding: 24px;
+    }
+    .post-box {
+      background: white; border-radius: 14px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+    .post-composer {
+      display: flex; gap: 12px; margin-bottom: 14px;
+    }
+    .composer-input {
+      flex: 1; padding: 12px 16px; border: 1.5px solid #e2e8f0;
+      border-radius: 12px; font-size: 14px; font-family: inherit;
+      resize: none; outline: none; min-height: 80px;
+      transition: border-color 0.2s;
+    }
+    .composer-input:focus { border-color: #6366f1; }
+    .composer-footer {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .type-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .type-pill {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px;
+      font-weight: 500; cursor: pointer; border: 1.5px solid #e2e8f0;
+      background: white; color: #64748b; transition: all 0.15s;
+    }
+    .type-pill:hover,
+    .type-pill.active { border-color: #6366f1; background: #ede9fe; color: #6366f1; }
+
+    .post-card {
+      background: white; border-radius: 14px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      margin-bottom: 14px; transition: transform 0.15s;
+    }
+    .post-card:hover { transform: translateY(-1px); }
+    .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .post-author { flex: 1; }
+    .post-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .post-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .post-type-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    }
+    .type-update      { background: #ede9fe; color: #6d28d9; }
+    .type-achievement { background: #fefce8; color: #854d0e; }
+    .type-job         { background: #f0fdf4; color: #166534; }
+    .type-question    { background: #eff6ff; color: #1e40af; }
+    .post-content {
+      font-size: 14px; color: #334155; line-height: 1.7;
+      margin-bottom: 14px; white-space: pre-line;
+    }
+    .post-actions {
+      display: flex; gap: 12px; padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .action-btn {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 13px; color: #64748b; cursor: pointer;
+      background: none; border: none; padding: 4px 8px;
+      border-radius: 8px; transition: all 0.15s;
+    }
+    .action-btn:hover { background: #f8fafc; color: #6366f1; }
+    .action-btn.liked { color: #ef4444; }
+
+    /* Sidebar */
+    .sidebar-card {
+      background: white; border-radius: 14px; padding: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      margin-bottom: 14px;
+    }
+    .sidebar-title {
+      font-size: 14px; font-weight: 700; color: #0f172a;
+      margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;
+    }
+    .filter-pill {
+      display: block; padding: 8px 12px; border-radius: 8px;
+      font-size: 13px; color: #64748b; text-decoration: none;
+      transition: all 0.15s; margin-bottom: 4px;
+    }
+    .filter-pill:hover { background: #f8fafc; color: #6366f1; }
+    .filter-pill.active { background: #ede9fe; color: #6366f1; font-weight: 600; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/feed" class="active">Feed</a>
+    <a href="/directory">Directory</a>
+    <a href="/jobs">Jobs</a>
+    {% if current_user.is_admin %}<a href="/admin">Admin</a>{% endif %}
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="feed-layout">
+  <!-- Main Feed -->
+  <div>
+    <!-- Composer -->
+    <div class="post-box">
+      <form method="POST" action="/feed/post" id="postForm">
+        <div class="post-composer">
+          <div class="avatar c1" style="flex-shrink:0;">
+            {{ user.full_name[0].upper() }}
+          </div>
+          <textarea class="composer-input" name="content"
+                    placeholder="Share an update, achievement, or question with your fellow alumni..."
+                    id="postContent"></textarea>
+        </div>
+        <div class="composer-footer">
+          <div class="type-pills">
+            {% for t, label, emoji in [
+              ('update','Update','📢'),
+              ('achievement','Achievement','🏆'),
+              ('job','Job Tip','💼'),
+              ('question','Question','❓')
+            ] %}
+            <label class="type-pill {{ 'active' if post_type == t }}"
+                   onclick="setType('{{ t }}', this)">
+              {{ emoji }} {{ label }}
+              <input type="radio" name="post_type" value="{{ t }}"
+                     style="display:none" {{ 'checked' if post_type == t or t == 'update' }}>
+            </label>
+            {% endfor %}
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Share →</button>
+        </div>
+      </form>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}{% for m in messages %}
+        <div class="alert alert-success">✅ {{ m }}</div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Posts -->
+    {% if posts %}
+      {% for post in posts %}
+      <div class="post-card" id="post-{{ post.id }}">
+        <div class="post-header">
+          <div class="avatar c{{ (loop.index % 5) + 1 }}"
+               style="width:40px;height:40px;font-size:15px;flex-shrink:0;">
+            {% if post.author %}{{ post.author.full_name[0].upper() }}{% else %}?{% endif %}
+          </div>
+          <div class="post-author">
+            <div class="post-name">
+              {% if post.author %}{{ post.author.full_name }}{% else %}Alumni{% endif %}
+            </div>
+            <div class="post-meta">
+              Batch {{ post.author.batch_year if post.author else 'N/A' }} ·
+              {{ post.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+            </div>
+          </div>
+          <span class="post-type-badge type-{{ post.post_type }}">
+            {% if post.post_type == 'update' %}📢 Update
+            {% elif post.post_type == 'achievement' %}🏆 Achievement
+            {% elif post.post_type == 'job' %}💼 Job Tip
+            {% elif post.post_type == 'question' %}❓ Question
+            {% endif %}
+          </span>
+        </div>
+        <div class="post-content">{{ post.content }}</div>
+        <div class="post-actions">
+          <button class="action-btn" onclick="likePost({{ post.id }}, this)">
+            ❤️ <span class="like-count">{{ post.likes }}</span> Likes
+          </button>
+          {% if post.author_id == current_user.id or current_user.is_admin %}
+            <form method="POST" action="/feed/delete/{{ post.id }}"
+                  onsubmit="return confirm('Delete this post?')" style="margin:0;">
+              <button type="submit" class="action-btn" style="color:#ef4444;">
+                🗑 Delete
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state post-box" style="text-align:center;padding:40px;">
+        <div style="font-size:36px;margin-bottom:12px;">📝</div>
+        No posts yet. Be the first to share something!
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div>
+    <div class="sidebar-card">
+      <div class="sidebar-title">🔍 Filter Posts</div>
+      <a href="/feed" class="filter-pill {{ 'active' if not post_type }}">
+        📋 All Posts
+      </a>
+      {% for t, label, emoji in [
+        ('update','Updates','📢'),
+        ('achievement','Achievements','🏆'),
+        ('job','Job Tips','💼'),
+        ('question','Questions','❓')
+      ] %}
+      <a href="/feed?type={{ t }}"
+         class="filter-pill {{ 'active' if post_type == t }}">
+        {{ emoji }} {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="sidebar-card">
+      <div class="sidebar-title">🔗 Quick Links</div>
+      <a href="/directory" class="filter-pill">👥 Alumni Directory</a>
+      <a href="/jobs"      class="filter-pill">💼 Job Board</a>
+      <a href="/events"    class="filter-pill">🎉 Events</a>
+      <a href="/reviews"   class="filter-pill">⭐ College Reviews</a>
+      <a href="/my-network" class="filter-pill">🌐 My Network</a>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="sidebar-title">👤 Your Profile</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div class="avatar c1" style="width:40px;height:40px;flex-shrink:0;">
+          {{ user.full_name[0].upper() }}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#0f172a;">{{ user.full_name }}</div>
+          <div style="font-size:11px;color:#94a3b8;">Batch {{ user.batch_year or 'N/A' }}</div>
+        </div>
+      </div>
+      <a href="/edit-profile" class="btn btn-ghost btn-sm" style="width:100%;text-align:center;">
+        ✏ Edit Profile
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+<script>
+function setType(type, el) {
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function likePost(postId, btn) {
+  try {
+    const res  = await fetch(`/feed/like/${postId}`, { method: 'POST' });
+    const data = await res.json();
+    btn.querySelector('.like-count').textContent = data.likes;
+    btn.classList.add('liked');
+  } catch(e) {
+    console.error(e);
+  }
+}
+</script>
+</body>
+</html>

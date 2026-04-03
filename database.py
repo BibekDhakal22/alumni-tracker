@@ -156,3 +156,31 @@ class JobApplication(db.Model):
     cover_letter = db.Column(db.Text)
     status       = db.Column(db.String(20), default='pending')  # pending, reviewed, accepted, rejected
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# -----------------------------------------------------------------------------
+# POST TABLE
+# Stores alumni posts/updates for the community feed
+# -----------------------------------------------------------------------------
+class Post(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    author_id  = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    content    = db.Column(db.Text, nullable=False)
+    post_type  = db.Column(db.String(50), default='update')  # update, achievement, job, question
+    likes      = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# -----------------------------------------------------------------------------
+# REVIEW TABLE
+# Stores alumni reviews and ratings of their college
+# -----------------------------------------------------------------------------
+class Review(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    author_id  = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    rating     = db.Column(db.Integer, nullable=False)   # 1-5 stars
+    title      = db.Column(db.String(200), nullable=False)
+    content    = db.Column(db.Text, nullable=False)
+    teaching   = db.Column(db.Integer, default=3)  # Teaching quality rating
+    facilities = db.Column(db.Integer, default=3)  # Facilities rating
+    placement  = db.Column(db.Integer, default=3)  # Placement rating
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

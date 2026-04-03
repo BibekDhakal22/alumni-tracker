@@ -54,7 +54,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication
+from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -930,6 +930,127 @@ def my_jobs():
     for a in applied:
         a.job = Job.query.get(a.job_id)
     return render_template('my_jobs.html', posted=posted, applied=applied)
+
+# =============================================================================
+# FEED ROUTES — Alumni Posts and Updates
+# =============================================================================
+
+@app.route('/feed')
+@login_required
+def feed():
+    post_type = request.args.get('type', '')
+    query = Post.query
+    if post_type:
+        query = query.filter_by(post_type=post_type)
+    all_posts = query.order_by(Post.created_at.desc()).all()
+    for p in all_posts:
+        p.author = Student.query.get(p.author_id)
+    return render_template('feed.html', posts=all_posts,
+                           post_type=post_type, user=current_user)
+
+@app.route('/feed/post', methods=['POST'])
+@login_required
+def create_post():
+    content   = request.form.get('content', '').strip()
+    post_type = request.form.get('post_type', 'update')
+    if not content:
+        flash('Post cannot be empty.')
+        return redirect(url_for('feed'))
+    post = Post(
+        author_id = current_user.id,
+        content   = content,
+        post_type = post_type
+    )
+    db.session.add(post)
+    db.session.commit()
+    flash('Post shared successfully!')
+    return redirect(url_for('feed'))
+
+@app.route('/feed/like/<int:post_id>', methods=['POST'])
+@login_required
+def like_post(post_id):
+    from flask import jsonify
+    post = Post.query.get_or_404(post_id)
+    post.likes += 1
+    db.session.commit()
+    return jsonify({'likes': post.likes})
+
+@app.route('/feed/delete/<int:post_id>', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    if post.author_id != current_user.id and not current_user.is_admin:
+        flash('You can only delete your own posts.')
+        return redirect(url_for('feed'))
+    db.session.delete(post)
+    db.session.commit()
+    flash('Post deleted.')
+    return redirect(url_for('feed'))
+
+# =============================================================================
+# REVIEW ROUTES — College Reviews and Ratings
+# =============================================================================
+
+@app.route('/reviews')
+@login_required
+def reviews():
+    all_reviews = Review.query.order_by(Review.created_at.desc()).all()
+    for r in all_reviews:
+        r.author = Student.query.get(r.author_id)
+    my_review = Review.query.filter_by(author_id=current_user.id).first()
+
+    # Calculate averages
+    total = len(all_reviews)
+    if total > 0:
+        avg_rating   = round(sum(r.rating for r in all_reviews) / total, 1)
+        avg_teaching = round(sum(r.teaching for r in all_reviews) / total, 1)
+        avg_facility = round(sum(r.facilities for r in all_reviews) / total, 1)
+        avg_placement= round(sum(r.placement for r in all_reviews) / total, 1)
+        rating_dist  = {i: sum(1 for r in all_reviews if r.rating == i) for i in range(1, 6)}
+    else:
+        avg_rating = avg_teaching = avg_facility = avg_placement = 0
+        rating_dist = {i: 0 for i in range(1, 6)}
+
+    return render_template('reviews.html',
+        reviews=all_reviews, my_review=my_review,
+        avg_rating=avg_rating, avg_teaching=avg_teaching,
+        avg_facility=avg_facility, avg_placement=avg_placement,
+        rating_dist=rating_dist, total=total)
+
+@app.route('/reviews/add', methods=['GET', 'POST'])
+@login_required
+def add_review():
+    existing = Review.query.filter_by(author_id=current_user.id).first()
+    if existing:
+        flash('You have already submitted a review.')
+        return redirect(url_for('reviews'))
+    if request.method == 'POST':
+        review = Review(
+            author_id  = current_user.id,
+            rating     = int(request.form.get('rating', 3)),
+            title      = request.form.get('title'),
+            content    = request.form.get('content'),
+            teaching   = int(request.form.get('teaching', 3)),
+            facilities = int(request.form.get('facilities', 3)),
+            placement  = int(request.form.get('placement', 3)),
+        )
+        db.session.add(review)
+        db.session.commit()
+        flash('Review submitted successfully!')
+        return redirect(url_for('reviews'))
+    return render_template('add_review.html')
+
+@app.route('/reviews/delete/<int:review_id>', methods=['POST'])
+@login_required
+def delete_review(review_id):
+    review = Review.query.get_or_404(review_id)
+    if review.author_id != current_user.id and not current_user.is_admin:
+        flash('You can only delete your own review.')
+        return redirect(url_for('reviews'))
+    db.session.delete(review)
+    db.session.commit()
+    flash('Review deleted.')
+    return redirect(url_for('reviews'))
 
 @app.route('/logout')
 @login_required
