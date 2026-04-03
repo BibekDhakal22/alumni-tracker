@@ -54,7 +54,24 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment
+from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment, Notification
+from datetime import datetime
+
+
+def create_notification(user_id, actor_id, notif_type, message, link=''):
+    """Create a notification for a user."""
+    if user_id == actor_id:
+        return  # Don't notify yourself
+    notif = Notification(
+        user_id    = user_id,
+        actor_id   = actor_id,
+        notif_type = notif_type,
+        message    = message,
+        link       = link
+    )
+    db.session.add(notif)
+    db.session.commit()
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -776,6 +793,15 @@ def follow(student_id):
         )
         db.session.add(follow)
         db.session.commit()
+        # Notify the followed person
+        followed = Student.query.get(student_id)
+        create_notification(
+            user_id    = student_id,
+            actor_id   = current_user.id,
+            notif_type = 'follow',
+            message    = f'{current_user.full_name} started following you',
+            link       = '/my-network'
+        )
     return redirect(request.referrer or url_for('directory'))
 
 @app.route('/unfollow/<int:student_id>', methods=['POST'])
@@ -919,6 +945,13 @@ def apply_job(job_id):
     )
     db.session.add(application)
     db.session.commit()
+    create_notification(
+        user_id    = job.posted_by,
+        actor_id   = current_user.id,
+        notif_type = 'job',
+        message    = f'{current_user.full_name} applied for your job: {job.title}',
+        link       = f'/jobs/{job_id}'
+    )
     flash('Application submitted successfully!')
     return redirect(url_for('job_detail', job_id=job_id))
 
@@ -973,10 +1006,21 @@ def create_post():
     if not content:
         flash('Post cannot be empty.')
         return redirect(url_for('feed'))
+
+    image_filename = None
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and file.filename and allowed_file(file.filename):
+            ext      = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"post_{current_user.id}_{int(datetime.now().timestamp())}.{ext}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            image_filename = filename
+
     post = Post(
         author_id = current_user.id,
         content   = content,
-        post_type = post_type
+        post_type = post_type,
+        image     = image_filename
     )
     db.session.add(post)
     db.session.commit()
@@ -991,6 +1035,13 @@ def like_post(post_id):
     post.likes += 1
     db.session.commit()
     return jsonify({'likes': post.likes})
+    create_notification(
+        user_id    = post.author_id,
+        actor_id   = current_user.id,
+        notif_type = 'like',
+        message    = f'{current_user.full_name} liked your post',
+        link       = f'/feed#post-{post.id}'
+    )
 
 @app.route('/feed/delete/<int:post_id>', methods=['POST'])
 @login_required
@@ -1095,6 +1146,40 @@ def delete_comment(comment_id):
     db.session.delete(comment)
     db.session.commit()
     return redirect(url_for('feed') + f'#post-{post_id}')
+
+# =============================================================================
+# NOTIFICATION ROUTES
+# =============================================================================
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    notifs = Notification.query.filter_by(user_id=current_user.id)\
+                               .order_by(Notification.created_at.desc()).all()
+    for n in notifs:
+        n.actor = Student.query.get(n.actor_id) if n.actor_id else None
+    # Mark all as read
+    Notification.query.filter_by(user_id=current_user.id, is_read=False)\
+                      .update({'is_read': True})
+    db.session.commit()
+    return render_template('notifications.html', notifications=notifs)
+
+@app.route('/notifications/unread-count')
+@login_required
+def unread_count():
+    from flask import jsonify
+    count = Notification.query.filter_by(
+        user_id=current_user.id, is_read=False
+    ).count()
+    return jsonify({'count': count})
+
+@app.route('/notifications/clear', methods=['POST'])
+@login_required
+def clear_notifications():
+    Notification.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    flash('All notifications cleared.')
+    return redirect(url_for('notifications'))
 
 @app.route('/logout')
 @login_required

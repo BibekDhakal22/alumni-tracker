@@ -116,6 +116,10 @@
         {% endif %}
       </div>
     </div>
+    <a href="/notifications" class="notif-bell" id="bellBtn">
+      🔔
+      <span class="notif-count" id="notifCount" style="display:none;">0</span>
+    </a>
     <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
     {% if current_user.is_admin %}
       <span class="nav-badge admin">Admin</span>
@@ -131,30 +135,50 @@
   <div>
     <!-- Composer -->
     <div class="post-box">
-      <form method="POST" action="/feed/post" id="postForm">
+      <form method="POST" action="/feed/post" id="postForm" enctype="multipart/form-data">
         <div class="post-composer">
           <div class="avatar c1" style="flex-shrink:0;">
             {{ user.full_name[0].upper() }}
           </div>
           <textarea class="composer-input" name="content"
-                    placeholder="Share an update, achievement, or question with your fellow alumni..."
-                    id="postContent"></textarea>
+            placeholder="Share an update, achievement, or question with your fellow alumni..." id="postContent"></textarea>
         </div>
+      
+        <!-- Image preview -->
+        <div id="imagePreview" style="display:none;margin-bottom:10px;">
+          <img id="previewImg" style="max-height:200px;border-radius:8px;
+               border:1px solid #e2e8f0;max-width:100%;">
+          <button type="button" onclick="removeImage()" style="display:block;margin-top:6px;background:none;border:none;
+                         color:#ef4444;font-size:12px;cursor:pointer;">
+            ✕ Remove image
+          </button>
+        </div>
+      
         <div class="composer-footer">
-          <div class="type-pills">
-            {% for t, label, emoji in [
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="type-pills">
+              {% for t, label, emoji in [
               ('update','Update','📢'),
               ('achievement','Achievement','🏆'),
               ('job','Job Tip','💼'),
               ('question','Question','❓')
-            ] %}
-            <label class="type-pill {{ 'active' if post_type == t }}"
-                   onclick="setType('{{ t }}', this)">
-              {{ emoji }} {{ label }}
-              <input type="radio" name="post_type" value="{{ t }}"
-                     style="display:none" {{ 'checked' if post_type == t or t == 'update' }}>
+              ] %}
+              <label class="type-pill {{ 'active' if post_type == t }}" onclick="setType('{{ t }}', this)">
+                {{ emoji }} {{ label }}
+                <input type="radio" name="post_type" value="{{ t }}" style="display:none" {{ 'checked' if post_type==t or
+                  t=='update' }}>
+              </label>
+              {% endfor %}
+            </div>
+            <!-- Image upload button -->
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px;
+                          font-size:13px;color:#64748b;padding:4px 10px;
+                          border:1.5px solid #e2e8f0;border-radius:20px;
+                          transition:all 0.15s;" id="imgLabel">
+              📷 Photo
+              <input type="file" name="image" id="imageInput" accept="image/*" style="display:none"
+                onchange="previewImage(this)">
             </label>
-            {% endfor %}
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Share →</button>
         </div>
@@ -210,6 +234,14 @@
             </form>
           {% endif %}
         </div>
+        {% if post.image %}
+        <div style="margin-bottom:12px;">
+          <img src="/static/uploads/{{ post.image }}"
+               style="max-width:100%;border-radius:10px;border:1px solid #e2e8f0;
+                      max-height:400px;object-fit:cover;cursor:pointer;"
+               onclick="openImage('/static/uploads/{{ post.image }}')">
+        </div>
+        {% endif %}
 
         <!-- Comments Section -->
         <div id="comments-{{ post.id }}" style="display:none;margin-top:14px;
@@ -361,6 +393,37 @@ window.addEventListener('load', () => {
     if (box) box.style.display = 'block';
   }
 });
+
+function previewImage(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('imagePreview').style.display = 'block';
+      document.getElementById('imgLabel').style.borderColor = '#6366f1';
+      document.getElementById('imgLabel').style.color = '#6366f1';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function removeImage() {
+  document.getElementById('imageInput').value = '';
+  document.getElementById('imagePreview').style.display = 'none';
+  document.getElementById('imgLabel').style.borderColor = '#e2e8f0';
+  document.getElementById('imgLabel').style.color = '#64748b';
+}
+
+function openImage(src) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;
+    justify-content:center;cursor:pointer;`;
+  overlay.innerHTML = `<img src="${src}" style="max-width:90%;max-height:90vh;
+    border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">`;
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+}
 </script>
 </body>
 </html>

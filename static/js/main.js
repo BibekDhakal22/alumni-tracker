@@ -167,3 +167,24 @@ document.addEventListener('click', function(e) {
     menu.classList.remove('show');
   }
 });
+
+// ─── Notification Bell Counter ────────────────────────────────────────────────
+async function updateNotifCount() {
+  try {
+    const res  = await fetch('/notifications/unread-count');
+    const data = await res.json();
+    const badge = document.getElementById('notifCount');
+    if (badge) {
+      if (data.count > 0) {
+        badge.textContent = data.count > 9 ? '9+' : data.count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  } catch(e) {}
+}
+
+// Update count every 30 seconds
+updateNotifCount();
+setInterval(updateNotifCount, 30000);

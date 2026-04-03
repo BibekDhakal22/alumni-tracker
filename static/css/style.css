@@ -497,3 +497,22 @@ body.dark .text-muted   { color: #64748b; }
   transition: all 0.1s;
 }
 .nav-drop-menu a:hover { background: rgba(255,255,255,0.08); color: white; }
+
+
+/* ===== NOTIFICATION BELL ===== */
+.notif-bell {
+  position: relative; display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: none; border: 1px solid #334155;
+  color: #94a3b8; cursor: pointer; font-size: 16px;
+  text-decoration: none; transition: all 0.15s;
+}
+.notif-bell:hover { background: rgba(255,255,255,0.08); color: white; }
+.notif-count {
+  position: absolute; top: -4px; right: -4px;
+  background: #ef4444; color: white; font-size: 10px;
+  font-weight: 700; width: 16px; height: 16px;
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; border: 2px solid #0f172a;
+}

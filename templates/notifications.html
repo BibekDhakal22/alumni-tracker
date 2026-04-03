@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>Notifications — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .notif-card {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 16px; background: white; border-radius: 12px;
+      border: 1px solid #e2e8f0; margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: transform 0.15s;
+      text-decoration: none; color: inherit;
+    }
+    .notif-card:hover { transform: translateY(-1px); }
+    .notif-card.unread { border-left: 4px solid #6366f1; background: #fafafe; }
+    .notif-icon {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .notif-icon.like    { background: #fef2f2; }
+    .notif-icon.comment { background: #eff6ff; }
+    .notif-icon.follow  { background: #f0fdf4; }
+    .notif-icon.job     { background: #fffbeb; }
+    .notif-icon.event   { background: #fdf4ff; }
+    .notif-msg  { font-size: 14px; color: #0f172a; font-weight: 500; margin-bottom: 3px; }
+    .notif-time { font-size: 12px; color: #94a3b8; }
+    .notif-dot  {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #6366f1; flex-shrink: 0; margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/feed">Feed</a>
+    <a href="/directory">Directory</a>
+    <a href="/jobs">Jobs</a>
+    <div class="nav-dropdown" id="moreDropdown">
+      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
+      <div class="nav-drop-menu" id="dropMenu">
+        <a href="/notices">📋 Notices</a>
+        <a href="/events">🎉 Events</a>
+        <a href="/my-network">🌐 Network</a>
+        <a href="/reviews">⭐ Reviews</a>
+        <a href="/contact">✉️ Contact</a>
+        <a href="/idcard">🪪 ID Card</a>
+        <a href="/ai/chat">🤖 AI Assistant</a>
+        {% if current_user.is_admin %}
+          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
+          <a href="/admin">⚙️ Admin Panel</a>
+          <a href="/analytics">📊 Analytics</a>
+          <a href="/admin/messages">✉️ Messages</a>
+        {% endif %}
+      </div>
+    </div>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container-md">
+  <div class="page-header-row">
+    <div class="page-header" style="margin-bottom:0;">
+      <h2>🔔 Notifications</h2>
+      <p>Your recent activity and updates</p>
+    </div>
+    {% if notifications %}
+      <form method="POST" action="/notifications/clear" style="margin:0;">
+        <button type="submit" class="btn btn-ghost btn-sm"
+                style="color:#ef4444;border-color:#fecaca;">
+          🗑 Clear All
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}
+      <div class="alert alert-success" style="margin-top:16px;">✅ {{ m }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <div style="margin-top:20px;">
+    {% if notifications %}
+      {% for notif in notifications %}
+      <a href="{{ notif.link or '/dashboard' }}" class="notif-card {{ 'unread' if not notif.is_read }}">
+        <div class="notif-icon {{ notif.notif_type }}">
+          {% if notif.notif_type == 'like'    %}❤️
+          {% elif notif.notif_type == 'comment' %}💬
+          {% elif notif.notif_type == 'follow'  %}👤
+          {% elif notif.notif_type == 'job'     %}💼
+          {% elif notif.notif_type == 'event'   %}🎉
+          {% else %}🔔{% endif %}
+        </div>
+        <div style="flex:1;">
+          <div class="notif-msg">{{ notif.message }}</div>
+          <div class="notif-time">
+            {{ notif.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+          </div>
+        </div>
+        {% if not notif.is_read %}
+          <div class="notif-dot"></div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state card">
+        <div class="empty-icon">🔔</div>
+        No notifications yet. Start interacting with other alumni!
+      </div>
+    {% endif %}
+  </div>
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

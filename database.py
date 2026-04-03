@@ -169,6 +169,7 @@ class Post(db.Model):
     post_type  = db.Column(db.String(50), default='update')  # update, achievement, job, question
     likes      = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    image = db.Column(db.String(200))  # Optional image filename
 
 # -----------------------------------------------------------------------------
 # REVIEW TABLE
@@ -197,4 +198,20 @@ class Comment(db.Model):
     post_id    = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     author_id  = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     content    = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+
+# -----------------------------------------------------------------------------
+# NOTIFICATION TABLE
+# Stores notifications for alumni (likes, comments, follows, etc.)
+# -----------------------------------------------------------------------------
+class Notification(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    actor_id   = db.Column(db.Integer, db.ForeignKey('student.id'))  # Who triggered it
+    notif_type = db.Column(db.String(50), nullable=False)  # like, comment, follow, job, event
+    message    = db.Column(db.String(300), nullable=False)
+    link       = db.Column(db.String(200))  # Where to go when clicked
+    is_read    = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

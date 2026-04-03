@@ -187,6 +187,10 @@
     {% if current_user.is_admin %}
       <a href="/ai/analytics-summary">Analytics AI</a>
     {% endif %}
+    <a href="/notifications" class="notif-bell" id="bellBtn">
+      🔔
+      <span class="notif-count" id="notifCount" style="display:none;">0</span>
+    </a>
     <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
     <a href="/logout" class="danger">Logout</a>
   </div>
