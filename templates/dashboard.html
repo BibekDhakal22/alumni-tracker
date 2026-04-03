@@ -13,27 +13,38 @@
   <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
   <div class="nav-links">
     <a href="/dashboard" class="active">Dashboard</a>
-    <a href="/directory">Directory</a>
-    <a href="/notices">Notices</a>
-    <a href="/ai/chat">🤖 AI Assistant</a>
-    <a href="/contact">Contact</a>
-    <a href="/my-network">Network</a>
-    <a href="/jobs">Jobs</a>
     <a href="/feed">Feed</a>
-    <a href="/reviews">Reviews</a>
-    {% if current_user.is_admin %}
-      <a href="/admin">Admin</a>
-      <a href="/analytics">Analytics</a>
-    {% endif %}
-    <span style="color:#475569; font-size:14px; padding: 0 4px;">{{ user.full_name }}</span>
+    <a href="/directory">Directory</a>
+    <a href="/jobs">Jobs</a>
+
+    <!-- More dropdown -->
+    <div class="nav-dropdown" id="moreDropdown">
+      <button class="nav-drop-btn" onclick="toggleDropdown()">
+        More ▾
+      </button>
+      <div class="nav-drop-menu" id="dropMenu">
+        <a href="/notices">📋 Notices</a>
+        <a href="/events">🎉 Events</a>
+        <a href="/my-network">🌐 Network</a>
+        <a href="/reviews">⭐ Reviews</a>
+        <a href="/contact">✉️ Contact</a>
+        <a href="/idcard">🪪 ID Card</a>
+        <a href="/ai/chat">🤖 AI Assistant</a>
+        {% if current_user.is_admin %}
+          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
+          <a href="/admin">⚙️ Admin Panel</a>
+          <a href="/analytics">📊 Analytics</a>
+          <a href="/admin/messages">✉️ Messages</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
     {% if user.is_admin %}
       <span class="nav-badge admin">Admin</span>
     {% else %}
       <span class="nav-badge student">Alumni</span>
     {% endif %}
-    <a href="/events">Events</a>
-    <a href="/id-card">ID Card</a>
-    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
     <a href="/logout" class="danger">Logout</a>
   </div>
 </nav>
@@ -98,6 +109,43 @@
         {{ user.higher_edu or '—' }}
       </div>
       <div class="stat-sub">{{ user.institution or 'Not updated yet' }}</div>
+    </div>
+    <!-- Platform Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      <div style="background:white;border-radius:12px;padding:16px;
+                    box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #e2e8f0;
+                    text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:#6366f1;">{{ stats.total_alumni }}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Total Alumni</div>
+      </div>
+      <div style="background:white;border-radius:12px;padding:16px;
+                    box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #e2e8f0;
+                    text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:#22c55e;">{{ stats.following }}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Following</div>
+      </div>
+      <div style="background:white;border-radius:12px;padding:16px;
+                    box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #e2e8f0;
+                    text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:#f59e0b;">{{ stats.followers }}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Followers</div>
+      </div>
+      <div style="background:white;border-radius:12px;padding:16px;
+                    box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #e2e8f0;
+                    text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:#06b6d4;">{{ stats.total_jobs }}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Active Jobs</div>
+      </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+      <a href="/feed" class="btn btn-ghost btn-sm">📢 Feed ({{ stats.total_posts }} posts)</a>
+      <a href="/jobs" class="btn btn-ghost btn-sm">💼 Jobs ({{ stats.total_jobs }})</a>
+      <a href="/events" class="btn btn-ghost btn-sm">🎉 Events ({{ stats.total_events }})</a>
+      <a href="/my-network" class="btn btn-ghost btn-sm">🌐 Network</a>
+      <a href="/reviews" class="btn btn-ghost btn-sm">⭐ Reviews</a>
+      <a href="/idcard" class="btn btn-ghost btn-sm">🪪 ID Card</a>
     </div>
   </div>
 

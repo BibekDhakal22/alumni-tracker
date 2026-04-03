@@ -95,11 +95,33 @@
   <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
   <div class="nav-links">
     <a href="/dashboard">Dashboard</a>
-    <a href="/feed" class="active">Feed</a>
+    <a href="/feed">Feed</a>
     <a href="/directory">Directory</a>
     <a href="/jobs">Jobs</a>
-    {% if current_user.is_admin %}<a href="/admin">Admin</a>{% endif %}
+    <div class="nav-dropdown" id="moreDropdown">
+      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
+      <div class="nav-drop-menu" id="dropMenu">
+        <a href="/notices">📋 Notices</a>
+        <a href="/events">🎉 Events</a>
+        <a href="/my-network">🌐 Network</a>
+        <a href="/reviews">⭐ Reviews</a>
+        <a href="/contact">✉️ Contact</a>
+        <a href="/idcard">🪪 ID Card</a>
+        <a href="/ai/chat">🤖 AI Assistant</a>
+        {% if current_user.is_admin %}
+          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
+          <a href="/admin">⚙️ Admin Panel</a>
+          <a href="/analytics">📊 Analytics</a>
+          <a href="/admin/messages">✉️ Messages</a>
+        {% endif %}
+      </div>
+    </div>
     <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    {% if current_user.is_admin %}
+      <span class="nav-badge admin">Admin</span>
+    {% else %}
+      <span class="nav-badge student">Alumni</span>
+    {% endif %}
     <a href="/logout" class="danger">Logout</a>
   </div>
 </nav>
@@ -176,6 +198,9 @@
           <button class="action-btn" onclick="likePost({{ post.id }}, this)">
             ❤️ <span class="like-count">{{ post.likes }}</span> Likes
           </button>
+          <button class="action-btn" onclick="toggleComments({{ post.id }})">
+            💬 {{ post.comments|length }} Comment{{ 's' if post.comments|length != 1 }}
+          </button>
           {% if post.author_id == current_user.id or current_user.is_admin %}
             <form method="POST" action="/feed/delete/{{ post.id }}"
                   onsubmit="return confirm('Delete this post?')" style="margin:0;">
@@ -184,6 +209,68 @@
               </button>
             </form>
           {% endif %}
+        </div>
+
+        <!-- Comments Section -->
+        <div id="comments-{{ post.id }}" style="display:none;margin-top:14px;
+             border-top:1px solid #f1f5f9;padding-top:14px;">
+
+          {% if post.comments %}
+            {% for comment in post.comments %}
+            <div style="display:flex;gap:8px;margin-bottom:10px;" id="comment-{{ comment.id }}">
+              <div class="avatar c{{ (loop.index % 5) + 1 }}"
+                   style="width:30px;height:30px;font-size:12px;flex-shrink:0;">
+                {% if comment.author %}{{ comment.author.full_name[0].upper() }}{% else %}?{% endif %}
+              </div>
+              <div style="flex:1;background:#f8fafc;border-radius:10px;padding:8px 12px;
+                          border:1px solid #f1f5f9;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:13px;font-weight:600;color:#0f172a;">
+                    {% if comment.author %}{{ comment.author.full_name }}{% else %}Alumni{% endif %}
+                  </span>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;color:#94a3b8;">
+                      {{ comment.created_at.strftime('%b %d') }}
+                    </span>
+                    {% if comment.author_id == current_user.id or current_user.is_admin %}
+                    <form method="POST" action="/feed/comment/delete/{{ comment.id }}"
+                          style="margin:0;">
+                      <button type="submit" style="background:none;border:none;
+                              color:#94a3b8;font-size:12px;cursor:pointer;padding:0;">
+                        ✕
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </div>
+                <div style="font-size:13px;color:#475569;margin-top:3px;line-height:1.5;">
+                  {{ comment.content }}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% endif %}
+
+          <!-- Add Comment Form -->
+          <form method="POST" action="/feed/comment/{{ post.id }}"
+                style="display:flex;gap:8px;margin-top:8px;">
+            <div class="avatar c1"
+                 style="width:30px;height:30px;font-size:12px;flex-shrink:0;">
+              {{ user.full_name[0].upper() }}
+            </div>
+            <div style="flex:1;display:flex;gap:6px;">
+              <input type="text" name="content"
+                     placeholder="Write a comment..."
+                     style="flex:1;padding:7px 12px;border:1.5px solid #e2e8f0;
+                            border-radius:20px;font-size:13px;outline:none;
+                            font-family:inherit;"
+                     required>
+              <button type="submit" class="btn btn-primary btn-sm"
+                      style="border-radius:20px;padding:7px 16px;">
+                Post
+              </button>
+            </div>
+          </form>
         </div>
       </div>
       {% endfor %}
@@ -259,6 +346,21 @@ async function likePost(postId, btn) {
     console.error(e);
   }
 }
+
+function toggleComments(postId) {
+  const box = document.getElementById('comments-' + postId);
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+// Auto-open comments if URL has anchor
+window.addEventListener('load', () => {
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#post-')) {
+    const postId = hash.replace('#post-', '');
+    const box = document.getElementById('comments-' + postId);
+    if (box) box.style.display = 'block';
+  }
+});
 </script>
 </body>
 </html>

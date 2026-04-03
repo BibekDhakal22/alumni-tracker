@@ -54,7 +54,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review
+from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -101,7 +101,20 @@ def dashboard():
         Notice.is_pinned.desc(),
         Notice.created_at.desc()
     ).limit(3).all()
-    return render_template('dashboard.html', user=current_user, notices=recent_notices)
+
+    # Platform statistics
+    stats = {
+        'total_alumni'  : Student.query.filter_by(is_admin=False).count(),
+        'total_jobs'    : Job.query.filter_by(is_active=True).count(),
+        'total_events'  : Event.query.count(),
+        'total_posts'   : Post.query.count(),
+        'following'     : Follow.query.filter_by(follower_id=current_user.id).count(),
+        'followers'     : Follow.query.filter_by(following_id=current_user.id).count(),
+        'my_posts'      : Post.query.filter_by(author_id=current_user.id).count(),
+        'my_jobs_applied': JobApplication.query.filter_by(applicant_id=current_user.id).count(),
+    }
+    return render_template('dashboard.html', user=current_user,
+                           notices=recent_notices, stats=stats)
 
 @app.route('/edit-profile', methods=['GET', 'POST'])
 @login_required
@@ -944,7 +957,11 @@ def feed():
         query = query.filter_by(post_type=post_type)
     all_posts = query.order_by(Post.created_at.desc()).all()
     for p in all_posts:
-        p.author = Student.query.get(p.author_id)
+        p.author   = Student.query.get(p.author_id)
+        p.comments = Comment.query.filter_by(post_id=p.id)\
+                             .order_by(Comment.created_at.asc()).all()
+        for c in p.comments:
+            c.author = Student.query.get(c.author_id)
     return render_template('feed.html', posts=all_posts,
                            post_type=post_type, user=current_user)
 
@@ -1051,6 +1068,33 @@ def delete_review(review_id):
     db.session.commit()
     flash('Review deleted.')
     return redirect(url_for('reviews'))
+
+@app.route('/feed/comment/<int:post_id>', methods=['POST'])
+@login_required
+def add_comment(post_id):
+    content = request.form.get('content', '').strip()
+    if not content:
+        return redirect(url_for('feed'))
+    comment = Comment(
+        post_id   = post_id,
+        author_id = current_user.id,
+        content   = content
+    )
+    db.session.add(comment)
+    db.session.commit()
+    return redirect(url_for('feed') + f'#post-{post_id}')
+
+@app.route('/feed/comment/delete/<int:comment_id>', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    if comment.author_id != current_user.id and not current_user.is_admin:
+        flash('You can only delete your own comments.')
+        return redirect(url_for('feed'))
+    post_id = comment.post_id
+    db.session.delete(comment)
+    db.session.commit()
+    return redirect(url_for('feed') + f'#post-{post_id}')
 
 @app.route('/logout')
 @login_required

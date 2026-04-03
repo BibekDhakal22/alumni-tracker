@@ -12,14 +12,33 @@
   <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
   <div class="nav-links">
     <a href="/dashboard">Dashboard</a>
+    <a href="/feed">Feed</a>
     <a href="/directory">Directory</a>
-    <a href="/notices" class="active">Notices</a>
-    <a href="/contact">Contact</a>
-    {% if current_user.is_admin %}
-      <a href="/admin">Admin</a>
-      <a href="/analytics">Analytics</a>
-    {% endif %}
+    <a href="/jobs">Jobs</a>
+    <div class="nav-dropdown" id="moreDropdown">
+      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
+      <div class="nav-drop-menu" id="dropMenu">
+        <a href="/notices">📋 Notices</a>
+        <a href="/events">🎉 Events</a>
+        <a href="/my-network">🌐 Network</a>
+        <a href="/reviews">⭐ Reviews</a>
+        <a href="/contact">✉️ Contact</a>
+        <a href="/idcard">🪪 ID Card</a>
+        <a href="/ai/chat">🤖 AI Assistant</a>
+        {% if current_user.is_admin %}
+          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
+          <a href="/admin">⚙️ Admin Panel</a>
+          <a href="/analytics">📊 Analytics</a>
+          <a href="/admin/messages">✉️ Messages</a>
+        {% endif %}
+      </div>
+    </div>
     <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    {% if current_user.is_admin %}
+      <span class="nav-badge admin">Admin</span>
+    {% else %}
+      <span class="nav-badge student">Alumni</span>
+    {% endif %}
     <a href="/logout" class="danger">Logout</a>
   </div>
 </nav>

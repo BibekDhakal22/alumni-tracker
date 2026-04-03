@@ -184,3 +184,17 @@ class Review(db.Model):
     facilities = db.Column(db.Integer, default=3)  # Facilities rating
     placement  = db.Column(db.Integer, default=3)  # Placement rating
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+
+
+# -----------------------------------------------------------------------------
+# COMMENT TABLE
+# Stores comments on alumni feed posts
+# -----------------------------------------------------------------------------
+class Comment(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    post_id    = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    author_id  = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    content    = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

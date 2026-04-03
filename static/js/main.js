@@ -151,3 +151,19 @@ document.addEventListener('DOMContentLoaded', function() {
 function confirmDelete(message) {
   return confirm(message || 'Are you sure you want to delete this?');
 }
+
+
+// ─── Nav Dropdown ─────────────────────────────────────────────────────────────
+function toggleDropdown() {
+  const menu = document.getElementById('dropMenu');
+  if (menu) menu.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('moreDropdown');
+  const menu     = document.getElementById('dropMenu');
+  if (dropdown && menu && !dropdown.contains(e.target)) {
+    menu.classList.remove('show');
+  }
+});
