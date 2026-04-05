@@ -54,7 +54,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment, Notification
+from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment, Notification, Bookmark, Poll, PollOption, PollVote
 from datetime import datetime
 
 
@@ -941,6 +941,16 @@ def jobs():
         posters=posters, sectors=sectors, job_types=job_types,
         sector=sector, job_type=job_type, search=search)
 
+    # Get current user's bookmarks
+    bookmarked_ids = [b.job_id for b in
+                      Bookmark.query.filter_by(student_id=current_user.id).all()]
+
+    return render_template('jobs.html',
+        jobs=all_jobs, applied_job_ids=applied_job_ids,
+        posters=posters, sectors=sectors, job_types=job_types,
+        sector=sector, job_type=job_type, search=search,
+        bookmarked_ids=bookmarked_ids)    
+
 @app.route('/jobs/post', methods=['GET', 'POST'])
 @login_required
 def post_job():
@@ -1320,6 +1330,113 @@ def badges():
     leaderboard.sort(key=lambda x: x['count'], reverse=True)
     return render_template('badges.html',
         my_badges=my_badges, leaderboard=leaderboard)
+
+# =============================================================================
+# BOOKMARK ROUTES
+# =============================================================================
+
+@app.route('/jobs/bookmark/<int:job_id>', methods=['POST'])
+@login_required
+def bookmark_job(job_id):
+    existing = Bookmark.query.filter_by(
+        student_id=current_user.id, job_id=job_id
+    ).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash('Job removed from bookmarks.')
+    else:
+        bookmark = Bookmark(student_id=current_user.id, job_id=job_id)
+        db.session.add(bookmark)
+        db.session.commit()
+        flash('Job saved to bookmarks!')
+    return redirect(request.referrer or url_for('jobs'))
+
+@app.route('/my-jobs/bookmarks')
+@login_required
+def bookmarked_jobs():
+    bookmarks   = Bookmark.query.filter_by(student_id=current_user.id).all()
+    saved_jobs  = [Job.query.get(b.job_id) for b in bookmarks]
+    saved_jobs  = [j for j in saved_jobs if j]  # Remove deleted jobs
+    applied_ids = [a.job_id for a in
+                   JobApplication.query.filter_by(applicant_id=current_user.id).all()]
+    return render_template('bookmarked_jobs.html',
+        saved_jobs=saved_jobs, applied_ids=applied_ids)
+
+# =============================================================================
+# POLL ROUTES
+# =============================================================================
+
+@app.route('/polls')
+@login_required
+def polls():
+    all_polls = Poll.query.order_by(Poll.created_at.desc()).all()
+    for p in all_polls:
+        p.options   = PollOption.query.filter_by(poll_id=p.id).all()
+        p.total     = sum(o.votes for o in p.options)
+        p.user_vote = PollVote.query.filter_by(
+            poll_id=p.id, student_id=current_user.id
+        ).first()
+    return render_template('polls.html', polls=all_polls)
+
+@app.route('/polls/vote/<int:poll_id>', methods=['POST'])
+@login_required
+def vote_poll(poll_id):
+    option_id = request.form.get('option_id', type=int)
+    if not option_id:
+        flash('Please select an option.')
+        return redirect(url_for('polls'))
+    # Check if already voted
+    existing = PollVote.query.filter_by(
+        poll_id=poll_id, student_id=current_user.id
+    ).first()
+    if existing:
+        flash('You have already voted on this poll.')
+        return redirect(url_for('polls'))
+    # Record vote
+    vote   = PollVote(poll_id=poll_id, student_id=current_user.id, option_id=option_id)
+    option = PollOption.query.get(option_id)
+    if option:
+        option.votes += 1
+    db.session.add(vote)
+    db.session.commit()
+    flash('Your vote has been recorded!')
+    return redirect(url_for('polls'))
+
+@app.route('/admin/polls/create', methods=['GET', 'POST'])
+@login_required
+def create_poll():
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        question = request.form.get('question')
+        options  = request.form.getlist('options')
+        options  = [o.strip() for o in options if o.strip()]
+        if len(options) < 2:
+            flash('Please add at least 2 options.')
+            return redirect(url_for('create_poll'))
+        poll = Poll(question=question)
+        db.session.add(poll)
+        db.session.flush()
+        for opt_text in options:
+            opt = PollOption(poll_id=poll.id, text=opt_text)
+            db.session.add(opt)
+        db.session.commit()
+        flash('Poll created successfully!')
+        return redirect(url_for('polls'))
+    return render_template('create_poll.html')
+
+@app.route('/admin/polls/delete/<int:poll_id>', methods=['POST'])
+@login_required
+def delete_poll(poll_id):
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+    PollVote.query.filter_by(poll_id=poll_id).delete()
+    PollOption.query.filter_by(poll_id=poll_id).delete()
+    Poll.query.filter_by(id=poll_id).delete()
+    db.session.commit()
+    flash('Poll deleted.')
+    return redirect(url_for('polls'))
 
 @app.route('/logout')
 @login_required

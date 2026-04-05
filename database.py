@@ -215,3 +215,46 @@ class Notification(db.Model):
     link       = db.Column(db.String(200))  # Where to go when clicked
     is_read    = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# -----------------------------------------------------------------------------
+# BOOKMARK TABLE
+# Stores jobs bookmarked/saved by alumni
+# -----------------------------------------------------------------------------
+class Bookmark(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    job_id     = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# -----------------------------------------------------------------------------
+# POLL TABLE
+# Stores polls created by admin
+# -----------------------------------------------------------------------------
+class Poll(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    question   = db.Column(db.String(300), nullable=False)
+    is_active  = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# -----------------------------------------------------------------------------
+# POLL OPTION TABLE
+# Stores options for each poll
+# -----------------------------------------------------------------------------
+class PollOption(db.Model):
+    id       = db.Column(db.Integer, primary_key=True)
+    poll_id  = db.Column(db.Integer, db.ForeignKey('poll.id'), nullable=False)
+    text     = db.Column(db.String(200), nullable=False)
+    votes    = db.Column(db.Integer, default=0)
+
+# -----------------------------------------------------------------------------
+# POLL VOTE TABLE
+# Stores votes cast by alumni
+# -----------------------------------------------------------------------------
+class PollVote(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    poll_id    = db.Column(db.Integer, db.ForeignKey('poll.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    option_id  = db.Column(db.Integer, db.ForeignKey('poll_option.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

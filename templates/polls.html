@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>Polls — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .poll-card {
+      background: white; border-radius: 14px; padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+    .poll-question {
+      font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 18px;
+    }
+    .poll-option {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .poll-option input[type=radio] { width:18px; height:18px; accent-color:#6366f1; cursor:pointer; }
+    .poll-option label { font-size:14px; color:#334155; cursor:pointer; flex:1; }
+
+    /* Results bar */
+    .result-bar-wrap { margin-bottom: 10px; }
+    .result-bar-header {
+      display: flex; justify-content: space-between;
+      font-size: 13px; margin-bottom: 5px;
+    }
+    .result-bar-label { color: #334155; font-weight: 500; }
+    .result-bar-pct   { color: #6366f1; font-weight: 700; }
+    .result-bar       {
+      height: 10px; background: #f1f5f9; border-radius: 6px; overflow: hidden;
+    }
+    .result-bar-fill  {
+      height: 100%; border-radius: 6px;
+      background: linear-gradient(90deg,#6366f1,#8b5cf6);
+      transition: width 0.8s ease;
+    }
+    .result-bar-fill.winner { background: linear-gradient(90deg,#22c55e,#16a34a); }
+
+    .voted-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      background:#f0fdf4; color:#16a34a; font-size:12px;
+      font-weight:600; padding:4px 12px; border-radius:20px;
+      border:1px solid #bbf7d0;
+    }
+    .total-votes { font-size:12px; color:#94a3b8; margin-top:12px; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/feed">Feed</a>
+    <a href="/directory">Directory</a>
+    <a href="/jobs">Jobs</a>
+    <div class="nav-dropdown" id="moreDropdown">
+      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
+      <div class="nav-drop-menu" id="dropMenu">
+        <a href="/notices">📋 Notices</a>
+        <a href="/polls">📊 Polls</a>
+        <a href="/events">🎉 Events</a>
+        <a href="/my-network">🌐 Network</a>
+        <a href="/reviews">⭐ Reviews</a>
+        <a href="/badges">🏅 Badges</a>
+        <a href="/contact">✉️ Contact</a>
+        <a href="/idcard">🪪 ID Card</a>
+        <a href="/ai/chat">🤖 AI Assistant</a>
+        {% if current_user.is_admin %}
+          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
+          <a href="/admin">⚙️ Admin Panel</a>
+          <a href="/analytics">📊 Analytics</a>
+          <a href="/admin/polls/create">➕ Create Poll</a>
+        {% endif %}
+      </div>
+    </div>
+    <a href="/notifications" class="notif-bell" id="bellBtn">
+      🔔<span class="notif-count" id="notifCount" style="display:none;">0</span>
+    </a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container-md">
+  <div class="page-header-row">
+    <div class="page-header" style="margin-bottom:0;">
+      <h2>📊 Alumni Polls</h2>
+      <p>Share your opinions and see what others think</p>
+    </div>
+    {% if current_user.is_admin %}
+      <a href="/admin/polls/create" class="btn btn-primary">+ Create Poll</a>
+    {% endif %}
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}
+      <div class="alert alert-success" style="margin-top:16px;">✅ {{ m }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <div style="margin-top:24px;">
+    {% if polls %}
+      {% for poll in polls %}
+      <div class="poll-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;
+                    margin-bottom:16px;">
+          <div class="poll-question">📊 {{ poll.question }}</div>
+          {% if poll.user_vote %}
+            <span class="voted-badge">✓ Voted</span>
+          {% endif %}
+        </div>
+
+        {% if poll.user_vote %}
+          <!-- Show results -->
+          {% set max_votes = poll.options|map(attribute='votes')|max %}
+          {% for option in poll.options %}
+          {% set pct = ((option.votes / poll.total * 100)|int) if poll.total > 0 else 0 %}
+          <div class="result-bar-wrap">
+            <div class="result-bar-header">
+              <span class="result-bar-label">
+                {{ option.text }}
+                {% if poll.user_vote.option_id == option.id %}
+                  <span style="color:#6366f1;font-size:11px;">← your vote</span>
+                {% endif %}
+              </span>
+              <span class="result-bar-pct">{{ pct }}%</span>
+            </div>
+            <div class="result-bar">
+              <div class="result-bar-fill {{ 'winner' if option.votes == max_votes and max_votes > 0 }}"
+                   style="width:{{ pct }}%;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <!-- Show voting form -->
+          <form method="POST" action="/polls/vote/{{ poll.id }}">
+            {% for option in poll.options %}
+            <div class="poll-option">
+              <input type="radio" name="option_id" id="opt-{{ option.id }}"
+                     value="{{ option.id }}" required>
+              <label for="opt-{{ option.id }}">{{ option.text }}</label>
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-sm" style="margin-top:10px;">
+              Vote →
+            </button>
+          </form>
+        {% endif %}
+
+        <div class="total-votes">
+          {{ poll.total }} vote{{ 's' if poll.total != 1 }} ·
+          {{ poll.created_at.strftime('%B %d, %Y') }}
+          {% if current_user.is_admin %}
+            <form method="POST" action="/admin/polls/delete/{{ poll.id }}"
+                  onsubmit="return confirm('Delete this poll?')"
+                  style="display:inline;margin-left:12px;">
+              <button type="submit" style="background:none;border:none;color:#ef4444;
+                      font-size:12px;cursor:pointer;">🗑 Delete</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state card">
+        <div class="empty-icon">📊</div>
+        No polls yet.
+        {% if current_user.is_admin %}
+          <br><a href="/admin/polls/create" class="btn btn-primary btn-sm"
+                 style="margin-top:12px;">Create First Poll</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
