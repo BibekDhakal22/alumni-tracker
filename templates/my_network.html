@@ -44,6 +44,15 @@
     <a href="/feed">Feed</a>
     <a href="/directory">Directory</a>
     <a href="/jobs">Jobs</a>
+    <form method="GET" action="/search" style="display:flex;align-items:center;">
+      <div style="position:relative;">
+        <input type="text" name="q" placeholder="🔍 Search..." style="padding:6px 14px;border-radius:20px;border:1px solid #334155;
+                      background:rgba(255,255,255,0.08);color:white;font-size:13px;
+                      outline:none;width:160px;font-family:inherit;"
+          onfocus="this.style.width='220px';this.style.borderColor='#6366f1'"
+          onblur="this.style.width='160px';this.style.borderColor='#334155'">
+      </div>
+    </form>
     <div class="nav-dropdown" id="moreDropdown">
       <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
       <div class="nav-drop-menu" id="dropMenu">

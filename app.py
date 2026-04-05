@@ -72,6 +72,65 @@ def create_notification(user_id, actor_id, notif_type, message, link=''):
     db.session.add(notif)
     db.session.commit()
 
+def get_badges(student):
+    """Calculate achievement badges for a student based on their profile."""
+    badges = []
+
+    # Profile completeness
+    fields = [student.job_title, student.company, student.email,
+              student.address, student.higher_edu, student.photo]
+    filled = sum(1 for f in fields if f and f != 'default.png')
+    if filled >= 6:
+        badges.append({'name': 'Profile Star', 'icon': '⭐', 'color': '#f59e0b',
+                       'desc': 'Completed full profile'})
+    elif filled >= 4:
+        badges.append({'name': 'Profile Builder', 'icon': '🏗', 'color': '#6366f1',
+                       'desc': 'Good profile completion'})
+
+    # Employment
+    if student.job_title and student.company:
+        badges.append({'name': 'Employed', 'icon': '💼', 'color': '#16a34a',
+                       'desc': 'Currently employed'})
+
+    # Higher education
+    if student.higher_edu:
+        badges.append({'name': 'Higher Studies', 'icon': '🎓', 'color': '#0891b2',
+                       'desc': 'Pursuing higher education'})
+
+    # IT sector
+    if student.job_sector == 'IT / Software':
+        badges.append({'name': 'Tech Alumni', 'icon': '💻', 'color': '#6366f1',
+                       'desc': 'Working in IT/Software'})
+
+    # Posts count
+    post_count = Post.query.filter_by(author_id=student.id).count()
+    if post_count >= 10:
+        badges.append({'name': 'Active Poster', 'icon': '📢', 'color': '#f59e0b',
+                       'desc': f'Shared {post_count} posts'})
+    elif post_count >= 3:
+        badges.append({'name': 'Contributor', 'icon': '✍️', 'color': '#64748b',
+                       'desc': 'Active in community'})
+
+    # Following count
+    following = Follow.query.filter_by(follower_id=student.id).count()
+    if following >= 5:
+        badges.append({'name': 'Networker', 'icon': '🌐', 'color': '#06b6d4',
+                       'desc': f'Following {following} alumni'})
+
+    # Reviews
+    review = Review.query.filter_by(author_id=student.id).first()
+    if review:
+        badges.append({'name': 'Reviewer', 'icon': '⭐', 'color': '#f59e0b',
+                       'desc': 'Reviewed their college'})
+
+    # Job poster
+    jobs_posted = Job.query.filter_by(posted_by=student.id).count()
+    if jobs_posted >= 1:
+        badges.append({'name': 'Job Poster', 'icon': '📋', 'color': '#16a34a',
+                       'desc': f'Posted {jobs_posted} job(s)'})
+
+    return badges   
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'alumni_secret_key_2024'
@@ -118,20 +177,20 @@ def dashboard():
         Notice.is_pinned.desc(),
         Notice.created_at.desc()
     ).limit(3).all()
-
-    # Platform statistics
     stats = {
-        'total_alumni'  : Student.query.filter_by(is_admin=False).count(),
-        'total_jobs'    : Job.query.filter_by(is_active=True).count(),
-        'total_events'  : Event.query.count(),
-        'total_posts'   : Post.query.count(),
-        'following'     : Follow.query.filter_by(follower_id=current_user.id).count(),
-        'followers'     : Follow.query.filter_by(following_id=current_user.id).count(),
-        'my_posts'      : Post.query.filter_by(author_id=current_user.id).count(),
+        'total_alumni'   : Student.query.filter_by(is_admin=False).count(),
+        'total_jobs'     : Job.query.filter_by(is_active=True).count(),
+        'total_events'   : Event.query.count(),
+        'total_posts'    : Post.query.count(),
+        'following'      : Follow.query.filter_by(follower_id=current_user.id).count(),
+        'followers'      : Follow.query.filter_by(following_id=current_user.id).count(),
+        'my_posts'       : Post.query.filter_by(author_id=current_user.id).count(),
         'my_jobs_applied': JobApplication.query.filter_by(applicant_id=current_user.id).count(),
     }
+    my_badges = get_badges(current_user)
     return render_template('dashboard.html', user=current_user,
-                           notices=recent_notices, stats=stats)
+                           notices=recent_notices, stats=stats,
+                           my_badges=my_badges)
 
 @app.route('/edit-profile', methods=['GET', 'POST'])
 @login_required
@@ -1180,6 +1239,87 @@ def clear_notifications():
     db.session.commit()
     flash('All notifications cleared.')
     return redirect(url_for('notifications'))
+
+# =============================================================================
+# GLOBAL SEARCH ROUTE
+# =============================================================================
+
+@app.route('/search')
+@login_required
+def global_search():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return render_template('search.html', query='', results=None)
+
+    # Search alumni
+    alumni = Student.query.filter(
+        Student.is_admin == False,
+        db.or_(
+            Student.full_name.ilike(f'%{query}%'),
+            Student.student_id.ilike(f'%{query}%'),
+            Student.job_title.ilike(f'%{query}%'),
+            Student.company.ilike(f'%{query}%'),
+            Student.address.ilike(f'%{query}%'),
+        )
+    ).limit(8).all()
+
+    # Search jobs
+    jobs = Job.query.filter(
+        Job.is_active == True,
+        db.or_(
+            Job.title.ilike(f'%{query}%'),
+            Job.company.ilike(f'%{query}%'),
+            Job.description.ilike(f'%{query}%'),
+        )
+    ).limit(5).all()
+
+    # Search notices
+    notices = Notice.query.filter(
+        db.or_(
+            Notice.title.ilike(f'%{query}%'),
+            Notice.content.ilike(f'%{query}%'),
+        )
+    ).limit(5).all()
+
+    # Search events
+    events = Event.query.filter(
+        db.or_(
+            Event.title.ilike(f'%{query}%'),
+            Event.description.ilike(f'%{query}%'),
+            Event.location.ilike(f'%{query}%'),
+        )
+    ).limit(5).all()
+
+    # Search posts
+    posts = Post.query.filter(
+        Post.content.ilike(f'%{query}%')
+    ).limit(5).all()
+    for p in posts:
+        p.author = Student.query.get(p.author_id)
+
+    results = {
+        'alumni':   alumni,
+        'jobs':     jobs,
+        'notices':  notices,
+        'events':   events,
+        'posts':    posts,
+        'total':    len(alumni) + len(jobs) + len(notices) + len(events) + len(posts)
+    }
+    return render_template('search.html', query=query, results=results)
+
+@app.route('/badges')
+@login_required
+def badges():
+    my_badges = get_badges(current_user)
+    # Leaderboard — who has most badges
+    all_students = Student.query.filter_by(is_admin=False).all()
+    leaderboard  = []
+    for s in all_students:
+        b = get_badges(s)
+        leaderboard.append({'student': s, 'badges': b, 'count': len(b)})
+    leaderboard.sort(key=lambda x: x['count'], reverse=True)
+    return render_template('badges.html',
+        my_badges=my_badges, leaderboard=leaderboard)
 
 @app.route('/logout')
 @login_required

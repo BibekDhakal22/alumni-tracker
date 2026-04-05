@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>Search — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .search-hero {
+      background: linear-gradient(135deg,#0f172a,#1e1b4b);
+      padding: 40px 24px; text-align: center; margin-bottom: 32px;
+    }
+    .search-hero h2 { color: white; font-size: 28px; font-weight: 700; margin-bottom: 20px; }
+    .search-bar {
+      display: flex; gap: 8px; max-width: 600px; margin: 0 auto;
+    }
+    .search-bar input {
+      flex: 1; padding: 14px 20px; border-radius: 12px;
+      border: none; font-size: 15px; outline: none;
+      font-family: inherit;
+    }
+    .search-bar button {
+      padding: 14px 24px; background: #6366f1; color: white;
+      border: none; border-radius: 12px; font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .search-bar button:hover { background: #4f46e5; }
+
+    .result-section { margin-bottom: 28px; }
+    .section-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 2px solid #f1f5f9;
+    }
+    .section-header h3 { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .section-count {
+      background: #ede9fe; color: #6d28d9; font-size: 11px;
+      font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    }
+
+    .result-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: white; border-radius: 10px;
+      border: 1px solid #e2e8f0; margin-bottom: 8px;
+      text-decoration: none; color: inherit; transition: all 0.15s;
+    }
+    .result-item:hover { transform: translateX(4px); border-color: #6366f1; }
+
+    .result-icon {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .result-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .result-sub   { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+
+    .highlight { background: #fef08a; border-radius: 2px; padding: 0 2px; }
+
+    .no-results {
+      text-align: center; padding: 60px; color: #94a3b8;
+    }
+    .no-results .icon { font-size: 48px; margin-bottom: 12px; }
+
+    .total-badge {
+      background: #6366f1; color: white; font-size: 13px; font-weight: 600;
+      padding: 4px 14px; border-radius: 20px; margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/feed">Feed</a>
+    <a href="/directory">Directory</a>
+    <a href="/jobs">Jobs</a>
+    <div class="nav-dropdown" id="moreDropdown">
+      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
+      <div class="nav-drop-menu" id="dropMenu">
+        <a href="/notices">📋 Notices</a>
+        <a href="/events">🎉 Events</a>
+        <a href="/my-network">🌐 Network</a>
+        <a href="/reviews">⭐ Reviews</a>
+        <a href="/contact">✉️ Contact</a>
+        <a href="/idcard">🪪 ID Card</a>
+        <a href="/ai/chat">🤖 AI Assistant</a>
+        {% if current_user.is_admin %}
+          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
+          <a href="/admin">⚙️ Admin Panel</a>
+          <a href="/analytics">📊 Analytics</a>
+        {% endif %}
+      </div>
+    </div>
+    <a href="/notifications" class="notif-bell" id="bellBtn">
+      🔔<span class="notif-count" id="notifCount" style="display:none;">0</span>
+    </a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<!-- Search Hero -->
+<div class="search-hero">
+  <h2>🔍 Search Everything</h2>
+  <form method="GET" action="/search">
+    <div class="search-bar">
+      <input type="text" name="q" value="{{ query }}"
+             placeholder="Search alumni, jobs, events, notices, posts..."
+             autofocus>
+      <button type="submit">Search</button>
+    </div>
+  </form>
+</div>
+
+<div class="container">
+  {% if results is none %}
+    <div class="no-results">
+      <div class="icon">🔍</div>
+      <div style="font-size:16px;font-weight:600;color:#0f172a;margin-bottom:8px;">
+        What are you looking for?
+      </div>
+      <div>Search across alumni, jobs, events, notices and posts all at once.</div>
+    </div>
+
+  {% elif results.total == 0 %}
+    <div class="no-results">
+      <div class="icon">😕</div>
+      <div style="font-size:16px;font-weight:600;color:#0f172a;margin-bottom:8px;">
+        No results for "{{ query }}"
+      </div>
+      <div>Try different keywords or check your spelling.</div>
+    </div>
+
+  {% else %}
+    <div style="margin-bottom:24px;font-size:15px;color:#64748b;">
+      Found
+      <span class="total-badge">{{ results.total }}</span>
+      results for "<strong>{{ query }}</strong>"
+    </div>
+
+    <!-- Alumni Results -->
+    {% if results.alumni %}
+    <div class="result-section">
+      <div class="section-header">
+        <h3>👤 Alumni</h3>
+        <span class="section-count">{{ results.alumni|length }}</span>
+      </div>
+      {% for s in results.alumni %}
+      <a href="/directory" class="result-item">
+        <div class="avatar c{{ (loop.index % 5) + 1 }}"
+             style="width:40px;height:40px;font-size:15px;border-radius:10px;">
+          {{ s.full_name[0].upper() }}
+        </div>
+        <div>
+          <div class="result-title">{{ s.full_name }}</div>
+          <div class="result-sub">
+            Batch {{ s.batch_year or 'N/A' }}
+            {% if s.job_title %} · {{ s.job_title }}{% endif %}
+            {% if s.company %} at {{ s.company }}{% endif %}
+          </div>
+        </div>
+        {% if s.job_sector %}
+          <span class="badge badge-it" style="margin-left:auto;">{{ s.job_sector }}</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Jobs Results -->
+    {% if results.jobs %}
+    <div class="result-section">
+      <div class="section-header">
+        <h3>💼 Jobs</h3>
+        <span class="section-count">{{ results.jobs|length }}</span>
+      </div>
+      {% for job in results.jobs %}
+      <a href="/jobs/{{ job.id }}" class="result-item">
+        <div class="result-icon" style="background:#ede9fe;">💼</div>
+        <div>
+          <div class="result-title">{{ job.title }}</div>
+          <div class="result-sub">
+            {{ job.company }}
+            {% if job.location %} · {{ job.location }}{% endif %}
+            · {{ job.job_type }}
+          </div>
+        </div>
+        <span style="margin-left:auto;font-size:11px;color:#94a3b8;">
+          {{ job.created_at.strftime('%b %d') }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Events Results -->
+    {% if results.events %}
+    <div class="result-section">
+      <div class="section-header">
+        <h3>🎉 Events</h3>
+        <span class="section-count">{{ results.events|length }}</span>
+      </div>
+      {% for event in results.events %}
+      <a href="/events" class="result-item">
+        <div class="result-icon" style="background:#fdf4ff;">🎉</div>
+        <div>
+          <div class="result-title">{{ event.title }}</div>
+          <div class="result-sub">
+            {{ event.event_type }} · {{ event.event_date }}
+            {% if event.location %} · {{ event.location }}{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Notices Results -->
+    {% if results.notices %}
+    <div class="result-section">
+      <div class="section-header">
+        <h3>📋 Notices</h3>
+        <span class="section-count">{{ results.notices|length }}</span>
+      </div>
+      {% for notice in results.notices %}
+      <a href="/notices" class="result-item">
+        <div class="result-icon" style="background:#f0fdf4;">📋</div>
+        <div>
+          <div class="result-title">{{ notice.title }}</div>
+          <div class="result-sub">
+            {{ notice.content[:80] }}{% if notice.content|length > 80 %}...{% endif %}
+          </div>
+        </div>
+        {% if notice.is_pinned %}
+          <span class="badge badge-pinned" style="margin-left:auto;">📌 Pinned</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Posts Results -->
+    {% if results.posts %}
+    <div class="result-section">
+      <div class="section-header">
+        <h3>📢 Posts</h3>
+        <span class="section-count">{{ results.posts|length }}</span>
+      </div>
+      {% for post in results.posts %}
+      <a href="/feed" class="result-item">
+        <div class="result-icon" style="background:#eff6ff;">📢</div>
+        <div>
+          <div class="result-title">
+            {% if post.author %}{{ post.author.full_name }}{% else %}Alumni{% endif %}
+          </div>
+          <div class="result-sub">
+            {{ post.content[:80] }}{% if post.content|length > 80 %}...{% endif %}
+          </div>
+        </div>
+        <span style="margin-left:auto;font-size:11px;color:#94a3b8;">
+          {{ post.created_at.strftime('%b %d') }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  {% endif %}
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

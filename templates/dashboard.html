@@ -17,6 +17,15 @@
     <a href="/directory">Directory</a>
     <a href="/jobs">Jobs</a>
 
+    <form method="GET" action="/search" style="display:flex;align-items:center;">
+      <div style="position:relative;">
+        <input type="text" name="q" placeholder="🔍 Search..." style="padding:6px 14px;border-radius:20px;border:1px solid #334155;
+                      background:rgba(255,255,255,0.08);color:white;font-size:13px;
+                      outline:none;width:160px;font-family:inherit;"
+          onfocus="this.style.width='220px';this.style.borderColor='#6366f1'"
+          onblur="this.style.width='160px';this.style.borderColor='#334155'">
+      </div>
+    </form>
     <!-- More dropdown -->
     <div class="nav-dropdown" id="moreDropdown">
       <button class="nav-drop-btn" onclick="toggleDropdown()">
@@ -150,6 +159,29 @@
       <a href="/reviews" class="btn btn-ghost btn-sm">⭐ Reviews</a>
       <a href="/id-card" class="btn btn-ghost btn-sm">🪪 ID Card</a>
     </div>
+    <!-- My Badges -->
+  {% if my_badges %}
+  <div style="background:white;border-radius:12px;padding:18px 20px;
+              box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #e2e8f0;
+              margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                margin-bottom:12px;">
+      <span style="font-size:14px;font-weight:600;color:#0f172a;">🏅 Your Badges</span>
+      <a href="/badges" style="font-size:12px;color:#6366f1;text-decoration:none;">
+        View all →
+      </a>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      {% for badge in my_badges %}
+      <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;
+                  border:1px solid #e2e8f0;border-radius:20px;padding:5px 12px;">
+        <span style="font-size:16px;">{{ badge.icon }}</span>
+        <span style="font-size:12px;font-weight:600;color:#0f172a;">{{ badge.name }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>Badges — Alumni Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .badge-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+    .badge-card {
+      background: white; border-radius: 14px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      text-align: center; transition: transform 0.15s;
+    }
+    .badge-card:hover { transform: translateY(-3px); }
+    .badge-icon {
+      font-size: 36px; margin-bottom: 10px; display: block;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+    .badge-name { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+    .badge-desc { font-size: 11px; color: #94a3b8; }
+    .badge-locked {
+      opacity: 0.35; filter: grayscale(100%);
+    }
+    .leader-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px; background: white; border-radius: 12px;
+      border: 1px solid #e2e8f0; margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .rank {
+      font-size: 18px; font-weight: 800; width: 32px;
+      text-align: center; flex-shrink: 0;
+    }
+    .rank.gold   { color: #f59e0b; }
+    .rank.silver { color: #94a3b8; }
+    .rank.bronze { color: #cd7c4f; }
+    .mini-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+    .mini-badge  { font-size: 16px; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/feed">Feed</a>
+    <a href="/directory">Directory</a>
+    <a href="/jobs">Jobs</a>
+    <div class="nav-dropdown" id="moreDropdown">
+      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
+      <div class="nav-drop-menu" id="dropMenu">
+        <a href="/notices">📋 Notices</a>
+        <a href="/events">🎉 Events</a>
+        <a href="/my-network">🌐 Network</a>
+        <a href="/reviews">⭐ Reviews</a>
+        <a href="/badges">🏅 Badges</a>
+        <a href="/contact">✉️ Contact</a>
+        <a href="/idcard">🪪 ID Card</a>
+        <a href="/ai/chat">🤖 AI Assistant</a>
+        {% if current_user.is_admin %}
+          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
+          <a href="/admin">⚙️ Admin Panel</a>
+          <a href="/analytics">📊 Analytics</a>
+        {% endif %}
+      </div>
+    </div>
+    <a href="/notifications" class="notif-bell" id="bellBtn">
+      🔔<span class="notif-count" id="notifCount" style="display:none;">0</span>
+    </a>
+    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <a href="/logout" class="danger">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h2>🏅 Achievement Badges</h2>
+    <p>Earn badges by completing your profile and engaging with the community</p>
+  </div>
+
+  <!-- My Badges -->
+  <div class="card" style="margin-bottom:28px;">
+    <div class="card-title">
+      Your Badges
+      <span style="background:#6366f1;color:white;font-size:12px;font-weight:600;
+                   padding:3px 10px;border-radius:20px;">
+        {{ my_badges|length }} earned
+      </span>
+    </div>
+
+    {% if my_badges %}
+    <div class="badge-grid">
+      {% for badge in my_badges %}
+      <div class="badge-card">
+        <span class="badge-icon">{{ badge.icon }}</span>
+        <div class="badge-name" style="color:{{ badge.color }};">{{ badge.name }}</div>
+        <div class="badge-desc">{{ badge.desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:32px;">
+      <div class="empty-icon">🏅</div>
+      No badges yet! Complete your profile and engage with alumni to earn badges.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- How to earn badges -->
+  <div class="card" style="margin-bottom:28px;">
+    <div class="card-title">How to Earn Badges</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      {% for icon, name, how in [
+        ('⭐','Profile Star','Complete all profile fields'),
+        ('💼','Employed','Add your job title and company'),
+        ('🎓','Higher Studies','Add your higher education info'),
+        ('💻','Tech Alumni','Work in IT/Software sector'),
+        ('📢','Active Poster','Share 10+ posts in the feed'),
+        ('🌐','Networker','Follow 5+ alumni'),
+        ('⭐','Reviewer','Write a college review'),
+        ('📋','Job Poster','Post at least one job'),
+        ('✍️','Contributor','Share 3+ posts in the feed'),
+      ] %}
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;
+                  background:#f8fafc;border-radius:10px;">
+        <span style="font-size:24px;">{{ icon }}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#0f172a;">{{ name }}</div>
+          <div style="font-size:11px;color:#94a3b8;">{{ how }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="card">
+    <div class="card-title">🏆 Badge Leaderboard</div>
+    {% for entry in leaderboard %}
+    {% if entry.count > 0 %}
+    <div class="leader-row">
+      <div class="rank {{ 'gold' if loop.index == 1 else 'silver' if loop.index == 2 else 'bronze' if loop.index == 3 else '' }}">
+        {% if loop.index == 1 %}🥇
+        {% elif loop.index == 2 %}🥈
+        {% elif loop.index == 3 %}🥉
+        {% else %}{{ loop.index }}{% endif %}
+      </div>
+      <div class="avatar c{{ (loop.index % 5) + 1 }}"
+           style="width:40px;height:40px;font-size:15px;flex-shrink:0;">
+        {{ entry.student.full_name[0].upper() }}
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;color:#0f172a;">
+          {{ entry.student.full_name }}
+          {% if entry.student.id == current_user.id %}
+            <span style="font-size:11px;color:#6366f1;font-weight:400;">(you)</span>
+          {% endif %}
+        </div>
+        <div class="mini-badges">
+          {% for badge in entry.badges %}
+            <span class="mini-badge" title="{{ badge.name }}">{{ badge.icon }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:18px;font-weight:700;color:#6366f1;">{{ entry.count }}</div>
+        <div style="font-size:11px;color:#94a3b8;">badges</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
