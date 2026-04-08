@@ -190,7 +190,8 @@ def dashboard():
     my_badges = get_badges(current_user)
     return render_template('dashboard.html', user=current_user,
                            notices=recent_notices, stats=stats,
-                           my_badges=my_badges)
+                           my_badges=my_badges, active='dashboard')
+    
 
 @app.route('/edit-profile', methods=['GET', 'POST'])
 @login_required
@@ -398,7 +399,7 @@ def directory():
     return render_template('directory.html', students=students,
                            search=search, sector=sector,
                            batch=batch, batches=batches, sectors=sectors,
-                           following_ids=following_ids)
+                           following_ids=following_ids, active='directory',)
 
 
 
@@ -426,7 +427,7 @@ def add_notice():
         db.session.commit()
         flash('Notice posted successfully!')
         return redirect(url_for('notices'))
-    return render_template('add_notice.html')
+    return render_template('add_notice.html', active='notices',)
 
 @app.route('/admin/notice/delete/<int:notice_id>', methods=['POST'])
 @login_required
@@ -487,7 +488,7 @@ def admin_messages():
     if not current_user.is_admin:
         return redirect(url_for('dashboard'))
     messages = Message.query.order_by(Message.created_at.desc()).all()
-    return render_template('admin_messages.html', messages=messages)
+    return render_template('admin_messages.html', messages=messages, active='messages',)
 
 @app.route('/admin/messages/read/<int:msg_id>', methods=['POST'])
 @login_required
@@ -597,7 +598,7 @@ def ai_career_advice():
         advice = response.choices[0].message.content
     except Exception as e:
         advice = f"Sorry, could not generate advice at this time. Error: {str(e)}"
-    return render_template('ai_career.html', user=current_user, advice=advice)
+    return render_template('ai_career.html', user=current_user, advice=advice,active='ai',)
 
 @app.route('/ai/analytics-summary')
 @login_required
@@ -644,7 +645,7 @@ def ai_analytics_summary():
         summary = response.choices[0].message.content
     except Exception as e:
         summary = f"Could not generate summary. Error: {str(e)}"
-    return render_template('ai_analytics.html', user=current_user, summary=summary)
+    return render_template('ai_analytics.html', user=current_user, summary=summary,active='ai',)
 
 @app.route('/ai/profile-suggestions')
 @login_required
@@ -712,7 +713,7 @@ def events():
     return render_template('events.html',
         events=all_events,
         user_rsvps=user_rsvps,
-        rsvp_counts=rsvp_counts
+        rsvp_counts=rsvp_counts,active='events',
     )
 
 @app.route('/admin/events/add', methods=['GET', 'POST'])
@@ -732,7 +733,7 @@ def add_event():
         db.session.commit()
         flash('Event added successfully!')
         return redirect(url_for('events'))
-    return render_template('add_event.html')
+    return render_template('add_event.html',back_link='/events', back_text='Back to Events',)
 
 @app.route('/admin/events/delete/<int:event_id>', methods=['POST'])
 @login_required
@@ -939,7 +940,7 @@ def jobs():
     return render_template('jobs.html',
         jobs=all_jobs, applied_job_ids=applied_job_ids,
         posters=posters, sectors=sectors, job_types=job_types,
-        sector=sector, job_type=job_type, search=search)
+        sector=sector, job_type=job_type, search=search,active='jobs',)
 
     # Get current user's bookmarks
     bookmarked_ids = [b.job_id for b in
@@ -1065,7 +1066,7 @@ def feed():
         for c in p.comments:
             c.author = Student.query.get(c.author_id)
     return render_template('feed.html', posts=all_posts,
-                           post_type=post_type, user=current_user)
+                           post_type=post_type, user=current_user, active='feed',)
 
 @app.route('/feed/post', methods=['POST'])
 @login_required

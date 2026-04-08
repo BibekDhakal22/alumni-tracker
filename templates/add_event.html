@@ -1,21 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Add Event — Alumni Tracker</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-</head>
-<body>
-
-<nav class="navbar">
-  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
-  <div class="nav-links">
-    <a href="/events">← Back to Events</a>
-    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
-    <a href="/logout" class="danger">Logout</a>
-  </div>
-</nav>
+{% extends 'base.html' %}
+{% block title %}Add-Events — Alumni Tracker{% endblock %}
+{% block content %}
 
 <div class="container-sm">
   <div class="page-header">
@@ -57,6 +42,4 @@
   </div>
 </div>
 
-<script src="/static/js/main.js"></script>
-</body>
-</html>
+{% endblock %}

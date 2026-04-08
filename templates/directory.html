@@ -1,130 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Alumni Directory — Alumni Tracker</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <style>
-    .dir-grid {
-      display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
-    }
-    .info-row {
-      display:flex; align-items:center; gap:8px;
-      font-size:13px; color:#64748b; margin-bottom:5px;
-    }
-
-    /* Autocomplete */
-    .search-wrap { position: relative; flex: 1; }
-    .autocomplete-box {
-      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-      background: white; border: 1.5px solid #e2e8f0; border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100;
-      overflow: hidden; display: none;
-    }
-    .autocomplete-box.show { display: block; }
-
-    .suggestion-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 14px; cursor: pointer;
-      transition: background 0.1s; border-bottom: 1px solid #f1f5f9;
-    }
-    .suggestion-item:last-child { border-bottom: none; }
-    .suggestion-item:hover { background: #f8fafc; }
-
-    .sug-avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: linear-gradient(135deg,#6366f1,#8b5cf6);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
-    }
-
-    .sug-name   { font-size: 14px; font-weight: 600; color: #0f172a; }
-    .sug-detail { font-size: 12px; color: #94a3b8; margin-top: 1px; }
-
-    .sug-badge {
-      margin-left: auto; font-size: 11px; font-weight: 500;
-      background: #ede9fe; color: #6d28d9;
-      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
-    }
-
-    .sug-loading {
-      padding: 14px; text-align: center;
-      font-size: 13px; color: #94a3b8;
-    }
-
-    .sug-empty {
-      padding: 14px; text-align: center;
-      font-size: 13px; color: #94a3b8;
-    }
-
-    .search-hint {
-      font-size: 11px; color: #94a3b8; margin-top: 6px;
-    }
-
-    /* Highlight matched text */
-    .highlight { background: #fef08a; border-radius: 2px; padding: 0 1px; }
-
-    /* Alumni cards */
-    .alumni-card {
-      background: white; border-radius: 14px; padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .alumni-card:hover {
-      transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    }
-  </style>
-</head>
-<body>
-
-<nav class="navbar">
-  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
-  <div class="nav-links">
-    <a href="/dashboard">Dashboard</a>
-    <a href="/feed">Feed</a>
-    <a href="/directory">Directory</a>
-    <a href="/jobs">Jobs</a>
-    <form method="GET" action="/search" style="display:flex;align-items:center;">
-      <div style="position:relative;">
-        <input type="text" name="q" placeholder="🔍 Search..." style="padding:6px 14px;border-radius:20px;border:1px solid #334155;
-                      background:rgba(255,255,255,0.08);color:white;font-size:13px;
-                      outline:none;width:160px;font-family:inherit;"
-          onfocus="this.style.width='220px';this.style.borderColor='#6366f1'"
-          onblur="this.style.width='160px';this.style.borderColor='#334155'">
-      </div>
-    </form>
-    <div class="nav-dropdown" id="moreDropdown">
-      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
-      <div class="nav-drop-menu" id="dropMenu">
-        <a href="/notices">📋 Notices</a>
-        <a href="/events">🎉 Events</a>
-        <a href="/my-network">🌐 Network</a>
-        <a href="/reviews">⭐ Reviews</a>
-        <a href="/contact">✉️ Contact</a>
-        <a href="/idcard">🪪 ID Card</a>
-        <a href="/ai/chat">🤖 AI Assistant</a>
-        {% if current_user.is_admin %}
-          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
-          <a href="/admin">⚙️ Admin Panel</a>
-          <a href="/analytics">📊 Analytics</a>
-          <a href="/admin/messages">✉️ Messages</a>
-        {% endif %}
-      </div>
-    </div>
-    <a href="/notifications" class="notif-bell" id="bellBtn">
-      🔔
-      <span class="notif-count" id="notifCount" style="display:none;">0</span>
-    </a>
-    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
-    {% if current_user.is_admin %}
-      <span class="nav-badge admin">Admin</span>
-    {% else %}
-      <span class="nav-badge student">Alumni</span>
-    {% endif %}
-    <a href="/logout" class="danger">Logout</a>
-  </div>
-</nav>
+{% extends 'base.html' %}
+{% block title %}Directory — Alumni Tracker{% endblock %}
+{% block content %}
 
 <div class="container">
   <div class="page-header">
@@ -245,7 +121,7 @@
   </div>
 </div>
 
-<script src="/static/js/main.js"></script>
+
 <script>
   let searchTimeout = null;
   let selectedIndex = -1;
@@ -346,5 +222,74 @@
     }
   });
 </script>
-</body>
-</html>
+ <style>
+    .dir-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+    }
+    .info-row {
+      display:flex; align-items:center; gap:8px;
+      font-size:13px; color:#64748b; margin-bottom:5px;
+    }
+
+    /* Autocomplete */
+    .search-wrap { position: relative; flex: 1; }
+    .autocomplete-box {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: white; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100;
+      overflow: hidden; display: none;
+    }
+    .autocomplete-box.show { display: block; }
+
+    .suggestion-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; cursor: pointer;
+      transition: background 0.1s; border-bottom: 1px solid #f1f5f9;
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: #f8fafc; }
+
+    .sug-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+    }
+
+    .sug-name   { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .sug-detail { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+
+    .sug-badge {
+      margin-left: auto; font-size: 11px; font-weight: 500;
+      background: #ede9fe; color: #6d28d9;
+      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    }
+
+    .sug-loading {
+      padding: 14px; text-align: center;
+      font-size: 13px; color: #94a3b8;
+    }
+
+    .sug-empty {
+      padding: 14px; text-align: center;
+      font-size: 13px; color: #94a3b8;
+    }
+
+    .search-hint {
+      font-size: 11px; color: #94a3b8; margin-top: 6px;
+    }
+
+    /* Highlight matched text */
+    .highlight { background: #fef08a; border-radius: 2px; padding: 0 1px; }
+
+    /* Alumni cards */
+    .alumni-card {
+      background: white; border-radius: 14px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .alumni-card:hover {
+      transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+  </style>
+{% endblock %}

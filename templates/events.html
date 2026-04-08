@@ -1,119 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Events — Alumni Tracker</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <style>
-    .events-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-
-    .event-card {
-      background: white; border-radius: 14px; overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .event-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-
-    .event-banner { height: 6px; }
-    .event-banner.reunion  { background: linear-gradient(90deg,#6366f1,#8b5cf6); }
-    .event-banner.seminar  { background: linear-gradient(90deg,#0ea5e9,#06b6d4); }
-    .event-banner.workshop { background: linear-gradient(90deg,#22c55e,#16a34a); }
-    .event-banner.social   { background: linear-gradient(90deg,#f59e0b,#d97706); }
-    .event-banner.general  { background: linear-gradient(90deg,#94a3b8,#64748b); }
-
-    .event-body { padding: 18px; }
-    .event-type {
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.8px; margin-bottom: 8px;
-    }
-    .event-type.reunion  { color: #6366f1; }
-    .event-type.seminar  { color: #0ea5e9; }
-    .event-type.workshop { color: #22c55e; }
-    .event-type.social   { color: #f59e0b; }
-    .event-type.general  { color: #94a3b8; }
-
-    .event-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
-    .event-desc  { font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 14px; }
-    .event-meta  { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
-    .event-meta-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; }
-
-    /* RSVP section */
-    .rsvp-section { border-top: 1px solid #f1f5f9; padding: 14px 18px; }
-    .rsvp-counts {
-      display: flex; gap: 12px; margin-bottom: 12px; font-size: 12px;
-    }
-    .rsvp-count { display: flex; align-items: center; gap: 4px; color: #64748b; }
-    .rsvp-buttons { display: flex; gap: 6px; }
-    .rsvp-btn {
-      flex: 1; padding: 7px 4px; border-radius: 8px; font-size: 12px;
-      font-weight: 600; cursor: pointer; border: 1.5px solid transparent;
-      transition: all 0.15s; text-align: center;
-    }
-    .rsvp-btn.going     { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
-    .rsvp-btn.maybe     { background: #fefce8; color: #854d0e; border-color: #fef08a; }
-    .rsvp-btn.not_going { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-    .rsvp-btn.going.active     { background: #16a34a; color: white; border-color: #16a34a; }
-    .rsvp-btn.maybe.active     { background: #d97706; color: white; border-color: #d97706; }
-    .rsvp-btn.not_going.active { background: #dc2626; color: white; border-color: #dc2626; }
-    .rsvp-btn:hover { transform: translateY(-1px); }
-
-    .event-footer {
-      padding: 10px 18px; border-top: 1px solid #f1f5f9;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-  </style>
-</head>
-<body>
-
-<nav class="navbar">
-  <a href="/dashboard" class="brand">Alumni <span>Tracker</span></a>
-  <div class="nav-links">
-    <a href="/dashboard">Dashboard</a>
-    <a href="/feed">Feed</a>
-    <a href="/directory">Directory</a>
-    <a href="/jobs">Jobs</a>
-    <form method="GET" action="/search" style="display:flex;align-items:center;">
-      <div style="position:relative;">
-        <input type="text" name="q" placeholder="🔍 Search..." style="padding:6px 14px;border-radius:20px;border:1px solid #334155;
-                      background:rgba(255,255,255,0.08);color:white;font-size:13px;
-                      outline:none;width:160px;font-family:inherit;"
-          onfocus="this.style.width='220px';this.style.borderColor='#6366f1'"
-          onblur="this.style.width='160px';this.style.borderColor='#334155'">
-      </div>
-    </form>
-    <div class="nav-dropdown" id="moreDropdown">
-      <button class="nav-drop-btn" onclick="toggleDropdown()">More ▾</button>
-      <div class="nav-drop-menu" id="dropMenu">
-        <a href="/notices">📋 Notices</a>
-        <a href="/events">🎉 Events</a>
-        <a href="/my-network">🌐 Network</a>
-        <a href="/reviews">⭐ Reviews</a>
-        <a href="/contact">✉️ Contact</a>
-        <a href="/id-card">🪪 ID Card</a>
-        <a href="/ai/chat">🤖 AI Assistant</a>
-        {% if current_user.is_admin %}
-          <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
-          <a href="/admin">⚙️ Admin Panel</a>
-          <a href="/analytics">📊 Analytics</a>
-          <a href="/admin/messages">✉️ Messages</a>
-        {% endif %}
-      </div>
-    </div>
-    <a href="/notifications" class="notif-bell" id="bellBtn">
-      🔔
-      <span class="notif-count" id="notifCount" style="display:none;">0</span>
-    </a>
-    <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙</button>
-    {% if current_user.is_admin %}
-      <span class="nav-badge admin">Admin</span>
-    {% else %}
-      <span class="nav-badge student">Alumni</span>
-    {% endif %}
-    <a href="/logout" class="danger">Logout</a>
-  </div>
-</nav>
-
+{% extends 'base.html' %}
+{% block title %}Events — Alumni Tracker{% endblock %}
+{% block content %}
 <div class="container">
   <div class="page-header-row">
     <div class="page-header" style="margin-bottom:0;">
@@ -231,6 +118,63 @@
   {% endif %}
 </div>
 
-<script src="/static/js/main.js"></script>
-</body>
-</html>
+
+<style>
+    .events-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
+    .event-card {
+      background: white; border-radius: 14px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .event-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+
+    .event-banner { height: 6px; }
+    .event-banner.reunion  { background: linear-gradient(90deg,#6366f1,#8b5cf6); }
+    .event-banner.seminar  { background: linear-gradient(90deg,#0ea5e9,#06b6d4); }
+    .event-banner.workshop { background: linear-gradient(90deg,#22c55e,#16a34a); }
+    .event-banner.social   { background: linear-gradient(90deg,#f59e0b,#d97706); }
+    .event-banner.general  { background: linear-gradient(90deg,#94a3b8,#64748b); }
+
+    .event-body { padding: 18px; }
+    .event-type {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; margin-bottom: 8px;
+    }
+    .event-type.reunion  { color: #6366f1; }
+    .event-type.seminar  { color: #0ea5e9; }
+    .event-type.workshop { color: #22c55e; }
+    .event-type.social   { color: #f59e0b; }
+    .event-type.general  { color: #94a3b8; }
+
+    .event-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .event-desc  { font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 14px; }
+    .event-meta  { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .event-meta-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; }
+
+    /* RSVP section */
+    .rsvp-section { border-top: 1px solid #f1f5f9; padding: 14px 18px; }
+    .rsvp-counts {
+      display: flex; gap: 12px; margin-bottom: 12px; font-size: 12px;
+    }
+    .rsvp-count { display: flex; align-items: center; gap: 4px; color: #64748b; }
+    .rsvp-buttons { display: flex; gap: 6px; }
+    .rsvp-btn {
+      flex: 1; padding: 7px 4px; border-radius: 8px; font-size: 12px;
+      font-weight: 600; cursor: pointer; border: 1.5px solid transparent;
+      transition: all 0.15s; text-align: center;
+    }
+    .rsvp-btn.going     { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+    .rsvp-btn.maybe     { background: #fefce8; color: #854d0e; border-color: #fef08a; }
+    .rsvp-btn.not_going { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+    .rsvp-btn.going.active     { background: #16a34a; color: white; border-color: #16a34a; }
+    .rsvp-btn.maybe.active     { background: #d97706; color: white; border-color: #d97706; }
+    .rsvp-btn.not_going.active { background: #dc2626; color: white; border-color: #dc2626; }
+    .rsvp-btn:hover { transform: translateY(-1px); }
+
+    .event-footer {
+      padding: 10px 18px; border-top: 1px solid #f1f5f9;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+  </style>
+{% endblock %}
