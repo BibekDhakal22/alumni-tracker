@@ -258,3 +258,15 @@ class PollVote(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     option_id  = db.Column(db.Integer, db.ForeignKey('poll_option.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# -----------------------------------------------------------------------------
+# DIRECT MESSAGE TABLE
+# Stores private messages between alumni
+# -----------------------------------------------------------------------------
+class DirectMessage(db.Model):
+    id          = db.Column(db.Integer, primary_key=True)
+    sender_id   = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    content     = db.Column(db.Text, nullable=False)
+    is_read     = db.Column(db.Boolean, default=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)

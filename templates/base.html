@@ -53,12 +53,14 @@
         <a href="/contact"          {% if active == 'contact'    %}style="color:white;background:rgba(255,255,255,0.08)"{% endif %}>✉️ Contact</a>
         <a href="/idcard"           {% if active == 'idcard'     %}style="color:white;background:rgba(255,255,255,0.08)"{% endif %}>🪪 ID Card</a>
         <a href="/ai/chat"          {% if active == 'ai'         %}style="color:white;background:rgba(255,255,255,0.08)"{% endif %}>🤖 AI Assistant</a>
+        <a href="/messages">💬 Messages</a>
         {% if current_user.is_admin %}
           <hr style="border:none;border-top:1px solid #334155;margin:4px 0;">
           <a href="/admin"          {% if active == 'admin'      %}style="color:white;background:rgba(255,255,255,0.08)"{% endif %}>⚙️ Admin Panel</a>
           <a href="/analytics"      {% if active == 'analytics'  %}style="color:white;background:rgba(255,255,255,0.08)"{% endif %}>📊 Analytics</a>
           <a href="/admin/messages" {% if active == 'messages'   %}style="color:white;background:rgba(255,255,255,0.08)"{% endif %}>✉️ Messages</a>
           <a href="/admin/polls/create">➕ Create Poll</a>
+          
         {% endif %}
       </div>
     </div>

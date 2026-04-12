@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% block title %}Events Calendar — Alumni Tracker{% endblock %}
+
+{% block head %}
+<style>
+  .calendar-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+  }
+  .cal-nav {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .cal-nav button {
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 14px; font-size: 14px; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .cal-nav button:hover { background: #f8fafc; border-color: #6366f1; }
+  .cal-month { font-size: 20px; font-weight: 700; color: #0f172a; min-width: 200px; text-align: center; }
+
+  .calendar-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 1px; background: #e2e8f0; border-radius: 12px;
+    overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .cal-day-header {
+    background: #0f172a; color: #94a3b8; text-align: center;
+    padding: 10px; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .cal-day {
+    background: white; min-height: 100px; padding: 8px;
+    position: relative; transition: background 0.15s;
+  }
+  .cal-day:hover { background: #fafafe; }
+  .cal-day.other-month { background: #f8fafc; }
+  .cal-day.today { background: #ede9fe; }
+  .cal-day-num {
+    font-size: 13px; font-weight: 600; color: #64748b;
+    margin-bottom: 4px;
+  }
+  .cal-day.today .cal-day-num {
+    background: #6366f1; color: white; width: 24px; height: 24px;
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 12px;
+  }
+  .cal-event {
+    font-size: 11px; font-weight: 500; padding: 2px 6px;
+    border-radius: 4px; margin-bottom: 2px; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: opacity 0.15s;
+  }
+  .cal-event:hover { opacity: 0.8; }
+  .cal-event.reunion   { background: #ede9fe; color: #6d28d9; }
+  .cal-event.seminar   { background: #dbeafe; color: #1e40af; }
+  .cal-event.workshop  { background: #dcfce7; color: #166534; }
+  .cal-event.social    { background: #fef9c3; color: #854d0e; }
+  .cal-event.general   { background: #f1f5f9; color: #475569; }
+
+  /* Event detail popup */
+  .event-popup {
+    display: none; position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: white; border-radius: 16px; padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2); z-index: 1000;
+    min-width: 320px; max-width: 400px;
+  }
+  .event-popup.show { display: block; }
+  .popup-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 999;
+  }
+  .popup-overlay.show { display: block; }
+
+  .view-toggle {
+    display: flex; gap: 4px; background: #f1f5f9;
+    padding: 4px; border-radius: 8px;
+  }
+  .view-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 13px;
+    font-weight: 500; cursor: pointer; border: none;
+    background: none; color: #64748b; transition: all 0.15s;
+    font-family: inherit;
+  }
+  .view-btn.active { background: white; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header-row">
+    <div class="page-header" style="margin-bottom:0;">
+      <h2>📅 Events Calendar</h2>
+      <p>View and RSVP to upcoming alumni events</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div class="view-toggle">
+        <button class="view-btn" onclick="window.location='/events'">📋 List</button>
+        <button class="view-btn active">📅 Calendar</button>
+      </div>
+      {% if current_user.is_admin %}
+        <a href="/admin/events/add" class="btn btn-primary btn-sm">+ Add Event</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Calendar Navigation -->
+  <div class="calendar-header" style="margin-top:24px;">
+    <div class="cal-nav">
+      <button onclick="changeMonth(-1)">← Prev</button>
+      <div class="cal-month" id="calMonthTitle"></div>
+      <button onclick="changeMonth(1)">Next →</button>
+    </div>
+    <button onclick="goToday()" class="btn btn-ghost btn-sm">Today</button>
+  </div>
+
+  <!-- Calendar Grid -->
+  <div class="calendar-grid" id="calendarGrid">
+    <div class="cal-day-header">Sun</div>
+    <div class="cal-day-header">Mon</div>
+    <div class="cal-day-header">Tue</div>
+    <div class="cal-day-header">Wed</div>
+    <div class="cal-day-header">Thu</div>
+    <div class="cal-day-header">Fri</div>
+    <div class="cal-day-header">Sat</div>
+  </div>
+
+  <!-- Upcoming Events List -->
+  <div class="card" style="margin-top:24px;">
+    <div class="card-title">📋 All Events</div>
+    {% if events %}
+      {% for event in events %}
+      {% set my_rsvp = user_rsvps.get(event.id, '') %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  padding:14px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:48px;height:48px;border-radius:10px;flex-shrink:0;
+                      background:{{ '#ede9fe' if event.event_type == 'Reunion' else '#dbeafe' if event.event_type == 'Seminar' else '#dcfce7' if event.event_type == 'Workshop' else '#fef9c3' }};
+                      display:flex;align-items:center;justify-content:center;font-size:20px;">
+            {{ '🎉' if event.event_type == 'Reunion' else '🎓' if event.event_type == 'Seminar' else '🛠' if event.event_type == 'Workshop' else '👥' if event.event_type == 'Social' else '📅' }}
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#0f172a;">{{ event.title }}</div>
+            <div style="font-size:12px;color:#94a3b8;">
+              📅 {{ event.event_date }}
+              {% if event.location %} · 📍 {{ event.location }}{% endif %}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          {% if my_rsvp %}
+            <span style="font-size:12px;font-weight:600;
+              color:{{ '#16a34a' if my_rsvp == 'going' else '#d97706' if my_rsvp == 'maybe' else '#dc2626' }};">
+              {{ '✅ Going' if my_rsvp == 'going' else '🤔 Maybe' if my_rsvp == 'maybe' else '❌ Not Going' }}
+            </span>
+          {% endif %}
+          <a href="/events" class="btn btn-primary btn-sm">RSVP →</a>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:24px;">
+        <div class="empty-icon">📅</div>
+        No events scheduled yet.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Event Popup -->
+<div class="popup-overlay" id="popupOverlay" onclick="closePopup()"></div>
+<div class="event-popup" id="eventPopup">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+    <div id="popupIcon" style="font-size:32px;"></div>
+    <button onclick="closePopup()" style="background:none;border:none;font-size:20px;
+            color:#94a3b8;cursor:pointer;">✕</button>
+  </div>
+  <h3 id="popupTitle" style="font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px;"></h3>
+  <div id="popupType" style="margin-bottom:10px;"></div>
+  <div id="popupDate" style="font-size:13px;color:#64748b;margin-bottom:6px;"></div>
+  <div id="popupLocation" style="font-size:13px;color:#64748b;margin-bottom:12px;"></div>
+  <div id="popupDesc" style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:16px;"></div>
+  <a href="/events" class="btn btn-primary" style="width:100%;text-align:center;">
+    View & RSVP →
+  </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const events = [
+  {% for event in events %}
+  {
+    id: {{ event.id }},
+    title: {{ event.title | tojson }},
+    date: {{ event.event_date | tojson }},
+    type: {{ event.event_type | tojson }},
+    location: {{ (event.location or '') | tojson }},
+    desc: {{ (event.description or '') | tojson }}
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+let currentDate = new Date();
+let currentMonth = currentDate.getMonth();
+let currentYear  = currentDate.getFullYear();
+
+const monthNames = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+
+function parseEventDate(dateStr) {
+  // Try to parse various date formats
+  const d = new Date(dateStr);
+  if (!isNaN(d)) return d;
+  return null;
+}
+
+function renderCalendar() {
+  document.getElementById('calMonthTitle').textContent =
+    `${monthNames[currentMonth]} ${currentYear}`;
+
+  const grid = document.getElementById('calendarGrid');
+  // Remove old day cells (keep headers)
+  const headers = Array.from(grid.children).slice(0, 7);
+  grid.innerHTML = '';
+  headers.forEach(h => grid.appendChild(h));
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const daysInPrev  = new Date(currentYear, currentMonth, 0).getDate();
+
+  const today = new Date();
+
+  // Previous month days
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day other-month';
+    cell.innerHTML = `<div class="cal-day-num">${daysInPrev - i}</div>`;
+    grid.appendChild(cell);
+  }
+
+  // Current month days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement('div');
+    const isToday = day === today.getDate() &&
+                    currentMonth === today.getMonth() &&
+                    currentYear  === today.getFullYear();
+    cell.className = `cal-day${isToday ? ' today' : ''}`;
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'cal-day-num';
+    numDiv.textContent = day;
+    cell.appendChild(numDiv);
+
+    // Add events for this day
+    events.forEach(ev => {
+      const evDate = parseEventDate(ev.date);
+      if (evDate && evDate.getDate() === day &&
+          evDate.getMonth() === currentMonth &&
+          evDate.getFullYear() === currentYear) {
+        const evDiv = document.createElement('div');
+        evDiv.className = `cal-event ${ev.type.toLowerCase()}`;
+        evDiv.textContent = ev.title;
+        evDiv.onclick = () => showPopup(ev);
+        cell.appendChild(evDiv);
+      }
+    });
+
+    grid.appendChild(cell);
+  }
+
+  // Next month days
+  const totalCells = firstDay + daysInMonth;
+  const remaining  = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let i = 1; i <= remaining; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day other-month';
+    cell.innerHTML = `<div class="cal-day-num">${i}</div>`;
+    grid.appendChild(cell);
+  }
+}
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0;  currentYear++; }
+  if (currentMonth < 0)  { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+function goToday() {
+  currentMonth = new Date().getMonth();
+  currentYear  = new Date().getFullYear();
+  renderCalendar();
+}
+
+function showPopup(ev) {
+  const icons = { Reunion:'🎉', Seminar:'🎓', Workshop:'🛠', Social:'👥', General:'📅' };
+  document.getElementById('popupIcon').textContent     = icons[ev.type] || '📅';
+  document.getElementById('popupTitle').textContent    = ev.title;
+  document.getElementById('popupType').innerHTML       =
+    `<span style="background:#ede9fe;color:#6d28d9;font-size:12px;font-weight:600;
+     padding:3px 10px;border-radius:20px;">${ev.type}</span>`;
+  document.getElementById('popupDate').textContent     = `📅 ${ev.date}`;
+  document.getElementById('popupLocation').textContent = ev.location ? `📍 ${ev.location}` : '';
+  document.getElementById('popupDesc').textContent     = ev.desc || 'No description provided.';
+  document.getElementById('eventPopup').classList.add('show');
+  document.getElementById('popupOverlay').classList.add('show');
+}
+
+function closePopup() {
+  document.getElementById('eventPopup').classList.remove('show');
+  document.getElementById('popupOverlay').classList.remove('show');
+}
+
+renderCalendar();
+</script>
+{% endblock %}

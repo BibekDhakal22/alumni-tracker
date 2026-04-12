@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Messages — Alumni Tracker{% endblock %}
+
+{% block content %}
+<div class="container-md">
+  <div class="page-header-row">
+    <div class="page-header" style="margin-bottom:0;">
+      <h2>
+        💬 Messages
+        {% if total_unread > 0 %}
+          <span style="background:#ef4444;color:white;font-size:12px;font-weight:600;
+                       padding:2px 8px;border-radius:20px;margin-left:8px;">
+            {{ total_unread }} new
+          </span>
+        {% endif %}
+      </h2>
+      <p>Your private conversations with alumni</p>
+    </div>
+    <a href="/directory" class="btn btn-primary btn-sm">+ New Message</a>
+  </div>
+
+  <div style="margin-top:20px;">
+    {% if conversations %}
+      {% for conv in conversations %}
+      <a href="/messages/{{ conv.partner.id }}"
+         style="display:flex;align-items:center;gap:14px;padding:16px;
+                background:white;border-radius:12px;border:1px solid #e2e8f0;
+                margin-bottom:10px;text-decoration:none;
+                {{ 'border-left:4px solid #6366f1;' if conv.unread > 0 }}
+                box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:all 0.15s;">
+        <div class="avatar c{{ (loop.index % 5) + 1 }}"
+             style="width:48px;height:48px;flex-shrink:0;">
+          {{ conv.partner.full_name[0].upper() }}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:15px;font-weight:600;color:#0f172a;">
+              {{ conv.partner.full_name }}
+            </span>
+            <span style="font-size:11px;color:#94a3b8;">
+              {{ conv.last_msg.created_at.strftime('%b %d') }}
+            </span>
+          </div>
+          <div style="font-size:13px;color:#64748b;margin-top:2px;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {% if conv.last_msg.sender_id == current_user.id %}You: {% endif %}
+            {{ conv.last_msg.content[:50] }}{% if conv.last_msg.content|length > 50 %}...{% endif %}
+          </div>
+        </div>
+        {% if conv.unread > 0 %}
+          <span style="background:#6366f1;color:white;font-size:11px;font-weight:700;
+                       min-width:20px;height:20px;border-radius:10px;
+                       display:flex;align-items:center;justify-content:center;
+                       padding:0 6px;">
+            {{ conv.unread }}
+          </span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state card">
+        <div class="empty-icon">💬</div>
+        No messages yet. Go to the
+        <a href="/directory" style="color:#6366f1;">Alumni Directory</a>
+        and start a conversation!
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

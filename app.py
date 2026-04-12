@@ -54,7 +54,7 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment, Notification, Bookmark, Poll, PollOption, PollVote
+from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment, Notification, Bookmark, Poll, PollOption, PollVote, DirectMessage
 from datetime import datetime
 
 
@@ -239,7 +239,7 @@ def admin():
                 'Business / Entrepreneurship', 'Higher Studies (Not working)', 'Other']
     return render_template('admin.html', students=students,
                            search=search, sector=sector,
-                           batch=batch, batches=batches, sectors=sectors)
+                           batch=batch, batches=batches, sectors=sectors, active='admin')
 
 @app.route('/admin/add-student', methods=['GET', 'POST'])
 @login_required
@@ -410,7 +410,7 @@ def notices():
         Notice.is_pinned.desc(),
         Notice.created_at.desc()
     ).all()
-    return render_template('notices.html', notices=all_notices)
+    return render_template('notices.html', notices=all_notices, active='notices',)
 
 @app.route('/admin/notice/add', methods=['GET', 'POST'])
 @login_required
@@ -1439,6 +1439,100 @@ def delete_poll(poll_id):
     flash('Poll deleted.')
     return redirect(url_for('polls'))
 
+@app.route('/events/calendar')
+@login_required
+def events_calendar():
+    all_events = Event.query.order_by(Event.event_date.asc()).all()
+    user_rsvps = {r.event_id: r.status for r in
+                  RSVP.query.filter_by(student_id=current_user.id).all()}
+    return render_template('events_calendar.html',
+        events=all_events, user_rsvps=user_rsvps)
+
+
+# =============================================================================
+# DIRECT MESSAGE ROUTES
+# =============================================================================
+
+@app.route('/messages')
+@login_required
+def dm_inbox():
+    # Get all unique conversations
+    sent     = DirectMessage.query.filter_by(sender_id=current_user.id).all()
+    received = DirectMessage.query.filter_by(receiver_id=current_user.id).all()
+
+    # Get unique conversation partners
+    partner_ids = set()
+    for m in sent:     partner_ids.add(m.receiver_id)
+    for m in received: partner_ids.add(m.sender_id)
+
+    conversations = []
+    for pid in partner_ids:
+        partner  = Student.query.get(pid)
+        if not partner: continue
+        last_msg = DirectMessage.query.filter(
+            db.or_(
+                db.and_(DirectMessage.sender_id==current_user.id,   DirectMessage.receiver_id==pid),
+                db.and_(DirectMessage.sender_id==pid, DirectMessage.receiver_id==current_user.id)
+            )
+        ).order_by(DirectMessage.created_at.desc()).first()
+        unread = DirectMessage.query.filter_by(
+            sender_id=pid, receiver_id=current_user.id, is_read=False
+        ).count()
+        conversations.append({
+            'partner': partner,
+            'last_msg': last_msg,
+            'unread': unread
+        })
+
+    conversations.sort(key=lambda x: x['last_msg'].created_at, reverse=True)
+    total_unread = sum(c['unread'] for c in conversations)
+    return render_template('dm_inbox.html',
+        conversations=conversations, total_unread=total_unread)
+
+@app.route('/messages/<int:partner_id>', methods=['GET', 'POST'])
+@login_required
+def dm_conversation(partner_id):
+    partner = Student.query.get_or_404(partner_id)
+    if request.method == 'POST':
+        content = request.form.get('content', '').strip()
+        if content:
+            msg = DirectMessage(
+                sender_id   = current_user.id,
+                receiver_id = partner_id,
+                content     = content
+            )
+            db.session.add(msg)
+            # Create notification
+            create_notification(
+                user_id    = partner_id,
+                actor_id   = current_user.id,
+                notif_type = 'message',
+                message    = f'{current_user.full_name} sent you a message',
+                link       = f'/messages/{current_user.id}'
+            )
+            db.session.commit()
+        return redirect(url_for('dm_conversation', partner_id=partner_id))
+
+    # Mark messages as read
+    DirectMessage.query.filter_by(
+        sender_id=partner_id,
+        receiver_id=current_user.id,
+        is_read=False
+    ).update({'is_read': True})
+    db.session.commit()
+
+    messages = DirectMessage.query.filter(
+        db.or_(
+            db.and_(DirectMessage.sender_id==current_user.id,
+                    DirectMessage.receiver_id==partner_id),
+            db.and_(DirectMessage.sender_id==partner_id,
+                    DirectMessage.receiver_id==current_user.id)
+        )
+    ).order_by(DirectMessage.created_at.asc()).all()
+
+    return render_template('dm_conversation.html',
+        partner=partner, messages=messages)
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -1477,3 +1571,4 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_error(e):
     return render_template('500.html'), 500
+
