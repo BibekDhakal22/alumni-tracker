@@ -47,6 +47,9 @@ class Student(db.Model, UserMixin):
     higher_edu  = db.Column(db.String(200))
     institution = db.Column(db.String(200))
 
+    totp_secret  = db.Column(db.String(32))   # Secret key for TOTP
+    totp_enabled = db.Column(db.Boolean, default=False)
+
     def set_password(self, phone_number):
         """Hash the phone number and store it as the password."""
         self.password = bcrypt.hashpw(
@@ -270,3 +273,24 @@ class DirectMessage(db.Model):
     content     = db.Column(db.Text, nullable=False)
     is_read     = db.Column(db.Boolean, default=False)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# -----------------------------------------------------------------------------
+# SKILL TABLE
+# Stores skills added by alumni to their profile
+# -----------------------------------------------------------------------------
+class Skill(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    name       = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# -----------------------------------------------------------------------------
+# ENDORSEMENT TABLE
+# Stores endorsements given by alumni for each other's skills
+# -----------------------------------------------------------------------------
+class Endorsement(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    skill_id   = db.Column(db.Integer, db.ForeignKey('skill.id'), nullable=False)
+    endorser_id= db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

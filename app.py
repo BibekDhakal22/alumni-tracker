@@ -54,8 +54,11 @@ from database import db, Student, Notice
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db, Student
-from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment, Notification, Bookmark, Poll, PollOption, PollVote, DirectMessage
+from database import db, Student, Notice, Message, Event, RSVP, Follow, Job, JobApplication, Post, Review, Comment, Notification, Bookmark, Poll, PollOption, PollVote, DirectMessage, Skill, Endorsement
 from datetime import datetime
+import pyotp
+import qrcode
+import base64
 
 
 def create_notification(user_id, actor_id, notif_type, message, link=''):
@@ -165,6 +168,10 @@ def login():
         phone      = request.form.get('phone')
         user = Student.query.filter_by(student_id=student_id).first()
         if user and user.check_password(phone):
+            if user.totp_enabled:
+                # Store user id in session for 2FA verification
+                session['pending_2fa_user'] = user.id
+                return redirect(url_for('verify_2fa'))
             login_user(user)
             return redirect(url_for('dashboard'))
         flash('Invalid Student ID or phone number.')
@@ -177,6 +184,7 @@ def dashboard():
         Notice.is_pinned.desc(),
         Notice.created_at.desc()
     ).limit(3).all()
+
     stats = {
         'total_alumni'   : Student.query.filter_by(is_admin=False).count(),
         'total_jobs'     : Job.query.filter_by(is_active=True).count(),
@@ -187,10 +195,23 @@ def dashboard():
         'my_posts'       : Post.query.filter_by(author_id=current_user.id).count(),
         'my_jobs_applied': JobApplication.query.filter_by(applicant_id=current_user.id).count(),
     }
+
     my_badges = get_badges(current_user)
-    return render_template('dashboard.html', user=current_user,
-                           notices=recent_notices, stats=stats,
-                           my_badges=my_badges, active='dashboard')
+
+    my_skills = Skill.query.filter_by(student_id=current_user.id).all()
+
+    for s in my_skills:
+        s.endorsement_count = Endorsement.query.filter_by(skill_id=s.id).count()
+
+    return render_template(
+        'dashboard.html',
+        user=current_user,
+        notices=recent_notices,
+        stats=stats,
+        my_badges=my_badges,
+        my_skills=my_skills,
+        active='dashboard'
+    )
     
 
 @app.route('/edit-profile', methods=['GET', 'POST'])
@@ -1532,6 +1553,165 @@ def dm_conversation(partner_id):
 
     return render_template('dm_conversation.html',
         partner=partner, messages=messages)
+
+# =============================================================================
+# SKILL & ENDORSEMENT ROUTES
+# =============================================================================
+
+@app.route('/skills/add', methods=['POST'])
+@login_required
+def add_skill():
+    name = request.form.get('skill_name', '').strip()
+    if not name:
+        flash('Skill name cannot be empty.')
+        return redirect(url_for('dashboard'))
+    # Check duplicate
+    existing = Skill.query.filter_by(
+        student_id=current_user.id, name=name
+    ).first()
+    if existing:
+        flash('You already have this skill.')
+        return redirect(url_for('dashboard'))
+    skill = Skill(student_id=current_user.id, name=name)
+    db.session.add(skill)
+    db.session.commit()
+    flash('Skill added successfully!')
+    return redirect(url_for('dashboard'))
+
+@app.route('/skills/delete/<int:skill_id>', methods=['POST'])
+@login_required
+def delete_skill(skill_id):
+    skill = Skill.query.get_or_404(skill_id)
+    if skill.student_id != current_user.id:
+        flash('You can only delete your own skills.')
+        return redirect(url_for('dashboard'))
+    Endorsement.query.filter_by(skill_id=skill_id).delete()
+    db.session.delete(skill)
+    db.session.commit()
+    flash('Skill removed.')
+    return redirect(url_for('dashboard'))
+
+@app.route('/skills/endorse/<int:skill_id>', methods=['POST'])
+@login_required
+def endorse_skill(skill_id):
+    skill = Skill.query.get_or_404(skill_id)
+    if skill.student_id == current_user.id:
+        flash('You cannot endorse your own skills.')
+        return redirect(request.referrer or url_for('directory'))
+    existing = Endorsement.query.filter_by(
+        skill_id=skill_id, endorser_id=current_user.id
+    ).first()
+    if existing:
+        # Remove endorsement (toggle)
+        db.session.delete(existing)
+        db.session.commit()
+    else:
+        endorsement = Endorsement(
+            skill_id    = skill_id,
+            endorser_id = current_user.id
+        )
+        db.session.add(endorsement)
+        # Notify skill owner
+        create_notification(
+            user_id    = skill.student_id,
+            actor_id   = current_user.id,
+            notif_type = 'endorsement',
+            message    = f'{current_user.full_name} endorsed your {skill.name} skill',
+            link       = '/dashboard'
+        )
+        db.session.commit()
+    return redirect(request.referrer or url_for('directory'))
+
+@app.route('/profile/<int:student_id>')
+@login_required
+def view_profile(student_id):
+    student = Student.query.get_or_404(student_id)
+    skills  = Skill.query.filter_by(student_id=student_id).all()
+    for s in skills:
+        s.endorsement_count = Endorsement.query.filter_by(skill_id=s.id).count()
+        s.endorsed_by_me    = Endorsement.query.filter_by(
+            skill_id=s.id, endorser_id=current_user.id
+        ).first() is not None
+    badges   = get_badges(student)
+    is_following = Follow.query.filter_by(
+        follower_id=current_user.id, following_id=student_id
+    ).first() is not None
+    return render_template('view_profile.html',
+        student=student, skills=skills,
+        badges=badges, is_following=is_following)
+
+# =============================================================================
+# TWO-FACTOR AUTHENTICATION ROUTES
+# =============================================================================
+
+@app.route('/security')
+@login_required
+def security():
+    return render_template('security.html', user=current_user)
+
+@app.route('/security/setup-2fa')
+@login_required
+def setup_2fa():
+    if not current_user.totp_secret:
+        current_user.totp_secret = pyotp.random_base32()
+        db.session.commit()
+    totp     = pyotp.TOTP(current_user.totp_secret)
+    otp_uri  = totp.provisioning_uri(
+        name=current_user.email or current_user.student_id,
+        issuer_name='Alumni Tracker'
+    )
+    # Generate QR code
+    qr       = qrcode.make(otp_uri)
+    buf      = io.BytesIO()
+    qr.save(buf, format='PNG')
+    qr_b64   = base64.b64encode(buf.getvalue()).decode()
+    return render_template('setup_2fa.html',
+        qr_code=qr_b64,
+        secret=current_user.totp_secret,
+        user=current_user)
+
+@app.route('/security/verify-2fa', methods=['POST'])
+@login_required
+def verify_2fa_setup():
+    code = request.form.get('code', '').strip()
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if totp.verify(code):
+        current_user.totp_enabled = True
+        db.session.commit()
+        flash('Two-factor authentication enabled successfully! 🔒')
+        return redirect(url_for('security'))
+    else:
+        flash('Invalid code. Please try again.')
+        return redirect(url_for('setup_2fa'))
+
+@app.route('/security/disable-2fa', methods=['POST'])
+@login_required
+def disable_2fa():
+    current_user.totp_enabled = False
+    current_user.totp_secret  = None
+    db.session.commit()
+    flash('Two-factor authentication disabled.')
+    return redirect(url_for('security'))
+
+@app.route('/verify-2fa', methods=['GET', 'POST'])
+def verify_2fa():
+    student_id = session.get('pending_2fa_user')
+    if not student_id:
+        return redirect(url_for('login'))
+    student = Student.query.get(student_id)
+    if not student:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        totp = pyotp.TOTP(student.totp_secret)
+        if totp.verify(code):
+            session.pop('pending_2fa_user', None)
+            login_user(student)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid authentication code. Please try again.')
+    return render_template('verify_2fa.html', student=student)
+
 
 @app.route('/logout')
 @login_required

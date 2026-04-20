@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Setup 2FA — Alumni Tracker{% endblock %}
+
+{% block content %}
+<div class="container-sm">
+  <div class="page-header">
+    <h2>🔐 Setup Two-Factor Authentication</h2>
+    <p>Scan the QR code with your authenticator app</p>
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}
+      <div class="alert alert-error">⚠️ {{ m }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">Step 1 — Install an Authenticator App</div>
+    <p style="font-size:14px;color:#64748b;margin-bottom:12px;">
+      Download one of these free apps on your phone:
+    </p>
+    <div style="display:flex;gap:10px;">
+      <span style="background:#f1f5f9;padding:8px 14px;border-radius:8px;
+                   font-size:13px;font-weight:500;">📱 Google Authenticator</span>
+      <span style="background:#f1f5f9;padding:8px 14px;border-radius:8px;
+                   font-size:13px;font-weight:500;">📱 Microsoft Authenticator</span>
+      <span style="background:#f1f5f9;padding:8px 14px;border-radius:8px;
+                   font-size:13px;font-weight:500;">📱 Authy</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">Step 2 — Scan QR Code</div>
+    <div style="text-align:center;padding:16px;">
+      <img src="data:image/png;base64,{{ qr_code }}"
+           style="width:200px;height:200px;border:8px solid white;
+                  border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.1);">
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">
+        Or enter this code manually:
+      </div>
+      <code style="background:#f1f5f9;padding:8px 16px;border-radius:8px;
+                   font-size:14px;letter-spacing:2px;font-weight:600;">
+        {{ secret }}
+      </code>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Step 3 — Verify Setup</div>
+    <p style="font-size:14px;color:#64748b;margin-bottom:16px;">
+      Enter the 6-digit code from your authenticator app to confirm setup.
+    </p>
+    <form method="POST" action="/security/verify-2fa">
+      <div class="form-group">
+        <label>Authentication Code</label>
+        <input type="text" name="code" placeholder="000000"
+               maxlength="6" pattern="[0-9]{6}"
+               style="letter-spacing:8px;font-size:20px;text-align:center;"
+               autofocus required>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary">✅ Verify & Enable</button>
+        <a href="/security" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -91,6 +91,9 @@
             <span class="badge badge-none">No sector info</span>
           {% endif %}
         </div>
+        <a href="/profile/{{ s.id }}" class="btn btn-ghost btn-sm" style="width:100%;text-align:center;margin-top:6px;">
+          👤 View Profile
+        </a>
         <!-- Follow button -->
         <div style="margin-top:12px;">
           {% if s.id != current_user.id %}

@@ -126,6 +126,58 @@
     </div>
   </div>
   {% endif %}
+  <!-- Skills Section -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title">
+      💡 My Skills
+      <span style="font-size:12px;color:#94a3b8;font-weight:400;">
+        Alumni can endorse your skills
+      </span>
+    </div>
+
+    <!-- Add skill form -->
+    <form method="POST" action="/skills/add"
+          style="display:flex;gap:8px;margin-bottom:16px;">
+      <input type="text" name="skill_name"
+             placeholder="e.g. Python, Flask, MySQL, React..."
+             style="flex:1;padding:8px 14px;border:1.5px solid #e2e8f0;
+                    border-radius:8px;font-size:13px;outline:none;
+                    font-family:inherit;"
+             maxlength="50">
+      <button type="submit" class="btn btn-primary btn-sm">+ Add Skill</button>
+    </form>
+
+    {% if my_skills %}
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for skill in my_skills %}
+      <div style="display:flex;align-items:center;gap:6px;
+                  background:#f8fafc;border:1px solid #e2e8f0;
+                  border-radius:20px;padding:5px 12px;">
+        <span style="font-size:13px;font-weight:500;color:#0f172a;">
+          {{ skill.name }}
+        </span>
+        {% if skill.endorsement_count > 0 %}
+          <span style="background:#6366f1;color:white;font-size:10px;
+                       font-weight:700;padding:1px 6px;border-radius:10px;">
+            {{ skill.endorsement_count }}
+          </span>
+        {% endif %}
+        <form method="POST" action="/skills/delete/{{ skill.id }}" style="margin:0;">
+          <button type="submit"
+                  style="background:none;border:none;color:#94a3b8;
+                         font-size:14px;cursor:pointer;padding:0;line-height:1;">
+            ×
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p style="font-size:13px;color:#94a3b8;font-style:italic;">
+        No skills added yet. Add your first skill above!
+      </p>
+    {% endif %}
+  </div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}{{ student.full_name }} — Alumni Tracker{% endblock %}
+
+{% block content %}
+<div class="container-md">
+
+  <!-- Profile Header -->
+  <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:16px;
+              padding:28px;margin-bottom:20px;display:flex;gap:20px;align-items:flex-start;">
+    {% if student.photo and student.photo != 'default.png' %}
+      <img src="/static/uploads/{{ student.photo }}"
+           style="width:88px;height:88px;border-radius:50%;object-fit:cover;
+                  border:3px solid rgba(255,255,255,0.2);flex-shrink:0;">
+    {% else %}
+      <div class="avatar xl c1" style="flex-shrink:0;">
+        {{ student.full_name[0].upper() }}
+      </div>
+    {% endif %}
+    <div style="flex:1;">
+      <h2 style="color:white;font-size:22px;font-weight:700;margin-bottom:4px;">
+        {{ student.full_name }}
+      </h2>
+      <p style="color:#94a3b8;font-size:14px;margin-bottom:10px;">
+        Batch {{ student.batch_year or 'N/A' }}
+        {% if student.job_title %} · {{ student.job_title }}{% endif %}
+        {% if student.company %} at {{ student.company }}{% endif %}
+        {% if student.address %} · 📍 {{ student.address }}{% endif %}
+      </p>
+      <!-- Badges -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        {% for badge in badges %}
+          <span style="background:rgba(255,255,255,0.1);color:white;
+                       font-size:12px;padding:3px 10px;border-radius:20px;">
+            {{ badge.icon }} {{ badge.name }}
+          </span>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% if student.id != current_user.id %}
+        {% if is_following %}
+          <form method="POST" action="/unfollow/{{ student.id }}" style="margin:0;">
+            <button type="submit" class="btn btn-ghost btn-sm"
+                    style="color:#ef4444;border-color:#fecaca;">
+              Unfollow
+            </button>
+          </form>
+        {% else %}
+          <form method="POST" action="/follow/{{ student.id }}" style="margin:0;">
+            <button type="submit" class="btn btn-primary btn-sm">+ Follow</button>
+          </form>
+        {% endif %}
+        <a href="/messages/{{ student.id }}" class="btn btn-ghost btn-sm">
+          💬 Message
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <!-- Left column -->
+    <div>
+      <!-- About -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">About</div>
+        <div class="profile-grid">
+          <div class="profile-field">
+            <label>Job Title</label>
+            <p class="{{ 'empty' if not student.job_title }}">
+              {{ student.job_title or 'Not updated' }}
+            </p>
+          </div>
+          <div class="profile-field">
+            <label>Company</label>
+            <p class="{{ 'empty' if not student.company }}">
+              {{ student.company or 'Not updated' }}
+            </p>
+          </div>
+          <div class="profile-field">
+            <label>Sector</label>
+            <p class="{{ 'empty' if not student.job_sector }}">
+              {{ student.job_sector or 'Not updated' }}
+            </p>
+          </div>
+          <div class="profile-field">
+            <label>Higher Education</label>
+            <p class="{{ 'empty' if not student.higher_edu }}">
+              {{ student.higher_edu or 'Not updated' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills & Endorsements -->
+      <div class="card">
+        <div class="card-title">💡 Skills & Endorsements</div>
+        {% if skills %}
+          {% for skill in skills %}
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      padding:10px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:14px;font-weight:500;color:#0f172a;">
+                {{ skill.name }}
+              </span>
+              {% if skill.endorsement_count > 0 %}
+                <span style="background:#ede9fe;color:#6d28d9;font-size:11px;
+                             font-weight:700;padding:2px 8px;border-radius:20px;">
+                  {{ skill.endorsement_count }} endorsement{{ 's' if skill.endorsement_count != 1 }}
+                </span>
+              {% endif %}
+            </div>
+            {% if student.id != current_user.id %}
+              <form method="POST" action="/skills/endorse/{{ skill.id }}" style="margin:0;">
+                <button type="submit" class="btn btn-sm"
+                        style="background:{{ '#6366f1' if skill.endorsed_by_me else '#f8fafc' }};
+                               color:{{ 'white' if skill.endorsed_by_me else '#64748b' }};
+                               border:1px solid {{ '#6366f1' if skill.endorsed_by_me else '#e2e8f0' }};">
+                  {{ '✓ Endorsed' if skill.endorsed_by_me else '+ Endorse' }}
+                </button>
+              </form>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" style="padding:20px;">
+            <div class="empty-icon">💡</div>
+            No skills added yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div>
+      <div class="card">
+        <div class="card-title">🏅 Badges</div>
+        {% if badges %}
+          {% for badge in badges %}
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;
+                      border-bottom:1px solid #f1f5f9;">
+            <span style="font-size:24px;">{{ badge.icon }}</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:{{ badge.color }};">
+                {{ badge.name }}
+              </div>
+              <div style="font-size:11px;color:#94a3b8;">{{ badge.desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" style="padding:20px;">
+            <div class="empty-icon">🏅</div>
+            No badges earned yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
